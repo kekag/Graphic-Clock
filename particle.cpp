@@ -223,49 +223,68 @@ void ScaleVector(double * v, double scale, int count) {
 	}
 }
 
-void RungeKuttaStep(ParticleSystem &ps, double DeltaT) {
+void RungeKuttaStep(ParticleSystem & ps, double DeltaT) {
 	int size = ps.ParticleDims();
 
-	// Get original prevPos
-	double prevPos, newPos;
-	double k1, k2, k3, k4, p2, p3, p4;
-	ps.ParticleGetState(&prevPos);
+	// Get original oldPositions
+	double * oldPositions = new double[size];
+	ps.ParticleGetState(oldPositions);
 
 	// Calculate the delta of an Euler step
-	ps.ParticleGetDerivative(&k1);
-	ScaleVector(&k1, DeltaT, size);
+	double * k1 = new double[size];
+	ps.ParticleGetDerivative(k1);
+	ScaleVector(k1, DeltaT, size);
 
 	// Update the particle system by moving the k1/2
-	CopyVector(&p2, &k1, size); // p2 gets k1
-	ScaleVector(&p2, 0.5, size);
-	AddVector(&prevPos, &p2, &p2, size);
-	ps.ParticleSetState(&p2);
+	double * p2 = new double[size];
+	CopyVector(p2, k1, size); // p2 gets k1
+	ScaleVector(p2, 0.5, size);
+	AddVector(oldPositions, p2, p2, size);
+	ps.ParticleSetState(p2);
 
-	ps.ParticleGetDerivative(&k2);
-	ScaleVector(&k2, DeltaT, size);
-	CopyVector(&p3, &k2, size);
-	ScaleVector(&p3, 0.5, size);
-	AddVector(&prevPos, &p3, &p3, size);
-	ps.ParticleSetState(&p3);
+	double * k2 = new double[size];
+	ps.ParticleGetDerivative(k2);
+	ScaleVector(k2, DeltaT, size);
+	double * p3 = new double[size];
+	CopyVector(p3, k2, size); // p2 gets k1
+	ScaleVector(p3, 0.5, size);
+	AddVector(oldPositions, p3, p3, size);
+	ps.ParticleSetState(p3);
 
-	ps.ParticleGetDerivative(&k3);
-	ScaleVector(&k3, DeltaT, size);
-	CopyVector(&p4, &k3, size);
-	AddVector(&prevPos, &p4, &p4, size);
-	ps.ParticleSetState(&p4);
+	double * k3 = new double[size];
+	ps.ParticleGetDerivative(k3);
+	ScaleVector(k3, DeltaT, size);
+	double * p4 = new double[size];
+	CopyVector(p4, k3, size); // p2 gets k1
+	AddVector(oldPositions, p4, p4, size);
+	ps.ParticleSetState(p4);
 
-	ps.ParticleGetDerivative(&k4);
-	ScaleVector(&k4, DeltaT, size);
+	double * k4 = new double[size];
+	ps.ParticleGetDerivative(k4);
+	ScaleVector(k4, DeltaT, size);
 
-	ScaleVector(&k1, (1.0/6.0), size);
-	ScaleVector(&k2, (1.0/3.0), size);
-	ScaleVector(&k3, (1.0/3.0), size);
-	ScaleVector(&k4, (1.0/6.0), size);
-	AddVector(&prevPos, &k1, &newPos, size);
-	AddVector(&newPos, &k2, &newPos, size);
-	AddVector(&newPos, &k3, &newPos, size);
-	AddVector(&newPos, &k4, &newPos, size);
-	ps.ParticleSetState(&newPos);
+	double * finalPositions = new double[size];
+	ScaleVector(k1, (1./6.), size);
+	ScaleVector(k2, (1./3.), size);
+	ScaleVector(k3, (1./3.), size);
+	ScaleVector(k4, (1./6.), size);
+	AddVector(oldPositions, k1, finalPositions, size);
+	AddVector(finalPositions, k2, finalPositions, size);
+	AddVector(finalPositions, k3, finalPositions, size);
+	AddVector(finalPositions, k4, finalPositions, size);
+	ps.ParticleSetState(finalPositions);
 
+	// increment time
 	ps.IncrementTime(DeltaT);
+
+	// cleanup
+	delete [] oldPositions;
+	delete [] k1;
+	delete [] k2;
+	delete [] k3;
+	delete [] k4;
+	delete [] p2;
+	delete [] p3;
+	delete [] p4;
+	delete [] finalPositions;
 }

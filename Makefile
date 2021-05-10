@@ -8,3 +8,4 @@ run:
 	make clean
 	make clock
 	./clock
+	make clean
