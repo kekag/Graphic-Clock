@@ -14,6 +14,11 @@
 #include "vector.hpp"
 
 #include <GL/freeglut.h>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 
 using namespace std;
 
@@ -37,23 +42,24 @@ double minRadius = 185;
 double hourRadius = 140;
 double dash = 205;
 
-// display 144 frames per 1000 milliseconds
-static int redisplayInterval = 1000 / 144;
+// display 60 frames per 1000 milliseconds
+static int redisplayInterval = 1000 / 60;
 
 ParticleSystem PS;
 
-double getDT() {
-	static clock_t start_time = clock();
-	static int current_frame = 0;
-	clock_t current_time = clock();
-	current_frame += 1;
-	double total_time = double(current_time - start_time) / CLOCKS_PER_SEC;
-	if (total_time == 0)
-		total_time = .00001;
-	double frames_per_second = (double)current_frame / total_time;
-	double dt = 1.0 / frames_per_second;
-	return dt;
-}
+// double getDT() {
+// 	static clock_t start_time = clock();
+// 	static int current_frame = 0;
+// 	clock_t current_time = clock();
+// 	current_frame += 1;
+// 	double total_time = double(current_time - start_time) / CLOCKS_PER_SEC;
+// 	if (total_time == 0)
+// 		total_time = .00001;
+// 	double frames_per_second = (double)current_frame / total_time;
+// 	double dt = 1.0 / frames_per_second;
+// 	cout << dt << endl;
+// 	return dt;
+// }
 
 void displayCircle(double x1, double y1, double radius) {
 	glBegin(GL_POLYGON);
@@ -89,6 +95,8 @@ void displayText(double x, double y, const char *string) {
 }
 
 void wallClock() {
+	clock_t start = clock();
+
 	time_t t = time(0);
 	tm bt{};
 #if WIN32
@@ -139,7 +147,7 @@ void wallClock() {
 	// cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
 
 	// DeltaT
-	PS.SetDeltaT(14.6 * getDT());
+	// PS.SetDeltaT(0.001);
 
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
@@ -167,12 +175,17 @@ void wallClock() {
 	SpringForce* s3 = new SpringForce(p1, p4, 10000, 200, hourRadius);
 	s3->setColor(black);
 	PS.AddForce(s3);
+
+	clock_t end = clock();
+	double newDT = (end-start)/15000.0;
+	cout << newDT << endl;
+	PS.SetDeltaT(newDT);
 }
 
 void render(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3dv(white);
-
+	
 	// if (reshaping) {
 	// 	prevReshaping = true;
 	// 	return;
