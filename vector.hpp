@@ -1,22 +1,19 @@
-// Vector.h
-// By Barton Stander
-// April 2001
-// For CS 3600 Graphics Programming
+// Written by Barton Stander
 
-class Point3
-{
+#ifndef _VECTOR_HPP_
+#define _VECTOR_HPP_
+
+class Point3 {
 public:
 	double p[3];
 };
 
-class Point4
-{
+class Point4 {
 public:
 	double p[4];
 };
 
-class Vector3
-{
+class Vector3 {
 public:
 	double v[3];
 	double Length(); // return vectors length
@@ -36,3 +33,4 @@ Point3 AffineSum(const Point3 &start, const Point3 & end, double t);
 double DistanceBetweenPoints(const Point3 & p1, const Point3 & p2);
 Vector3 operator+(const Vector3 & v1, const Vector3 & v2);
 
+#endif // _PARTICLE_HPP_

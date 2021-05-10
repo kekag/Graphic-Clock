@@ -1,9 +1,10 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include "forces.hpp"
+#include "particle.hpp"
+
 using namespace std;
-#include "forces.h"
-#include "particle.h"
 
 // Spring Force
 SpringForce::SpringForce(Particle* p1_temp, Particle* p2_temp, double spring_constant_temp, double damping_constant_temp, double rest_length_temp)

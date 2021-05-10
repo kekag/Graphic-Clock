@@ -1,11 +1,5 @@
-// particle.cpp
-// Bart Stander
-// January, 2002
-// For CS 3600 projects.
-// Taken from SIGGRAPH course notes on physically based modeling
-
-#include "particle.h"
-#include "forces.h"
+#include "particle.hpp"
+#include "forces.hpp"
 
 Particle::Particle(double pos_temp[DIM], double dir_temp[DIM], double r_temp, bool anchored_temp) {
 	for(int d=0; d<DIM; d++) {

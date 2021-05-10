@@ -9,9 +9,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "forces.h"
-#include "particle.h"
-#include "vector.h"
+#include "forces.hpp"
+#include "particle.hpp"
+#include "vector.hpp"
 
 #include <GL/freeglut.h>
 
@@ -138,10 +138,22 @@ void display(void) {
 	glutPostRedisplay();
 }
 
+double GetDeltaTime() {
+	static clock_t start_time = clock();
+	static int current_frame = 0;
+	clock_t current_time = clock();
+	current_frame += 1;
+	double total_time = double(current_time - start_time) / CLOCKS_PER_SEC;
+	if (total_time == 0)
+		total_time = .00001;
+	double frames_per_second = (double)current_frame / total_time;
+	double DT = 1.0 / frames_per_second;
+	return DT;
+}
+
 void Clock() {
 	time_t t = time(0);
 	tm bt{};
-	// localtime_s for WIN32, localtime_r for Linux
 	#if WIN32
 	localtime_s(&bt, &t);
 	#else 
@@ -156,7 +168,6 @@ void Clock() {
 	hour == 0 ? printHour = 12 : printHour = hour;
 	snprintf(str, 9, "%d:%02d:%02d", printHour, minute, second);
 	cout << "Current time: " << str << "\n";
-
 
 	// Second degree, no offset needed
 	double secdeg = second * 6;
@@ -184,7 +195,7 @@ void Clock() {
 	double hourDY = -cos(hd * M_PI / 180) / 3600;
 	
 	// DeltaT
-	PS.SetDeltaT(0.1);
+	PS.SetDeltaT(1000*GetDeltaTime());
 
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);

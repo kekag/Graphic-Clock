@@ -1,16 +1,14 @@
-// particle.h
-// Bart Stander
-// January, 2002
-// For CS 3600 projects.
+// Written by Bart Stander
 // Taken from SIGGRAPH course notes on physically based modeling
 
-#ifndef PARTICLE
-#define PARTICLE
+#ifndef _PARTICLE_HPP_
+#define _PARTICLE_HPP_
 
 #include <vector>
-class Force;
 
 using namespace std;
+
+class Force;
 
 const int DIM = 2;
 const int MAX_PARTICLES = 1000;
@@ -54,7 +52,6 @@ private:
 	double r; // radius
 	double m; // mass
 	bool anchored; // fixed or moving?
-
 };
 
 class ParticleSystem {
@@ -87,10 +84,8 @@ private:
 	vector<Force*> fArray;
 	double time;
 	double DeltaT;
-
 };
 
 void RungeKuttaStep(ParticleSystem & ps, double DeltaT);
 
-#endif
-
+#endif // _PARTICLE_HPP_

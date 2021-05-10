@@ -1,8 +1,7 @@
 #include <cmath>
-#include "vector.h"
+#include "vector.hpp"
 
-Vector3 operator-(const Point3 &head, const Point3 &tail)
-{
+Vector3 operator-(const Point3 &head, const Point3 &tail) {
 	Vector3 result;
 	result.v[0] = head.p[0] - tail.p[0];
 	result.v[1] = head.p[1] - tail.p[1];
@@ -10,8 +9,7 @@ Vector3 operator-(const Point3 &head, const Point3 &tail)
 	return result;
 }
 
-Vector3 operator-(const Point4 &head, const Point3 &tail)
-{
+Vector3 operator-(const Point4 &head, const Point3 &tail) {
 	Vector3 result;
 	result.v[0] = head.p[0] - tail.p[0];
 	result.v[1] = head.p[1] - tail.p[1];
@@ -19,14 +17,12 @@ Vector3 operator-(const Point4 &head, const Point3 &tail)
 	return result;
 }
 
-double Vector3::Length()
-{
+double Vector3::Length() {
 	double l = (double) sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 	return l;
 }
 
-double Vector3::Normalize()
-{
+double Vector3::Normalize() {
 	double l = Length();
 	v[0]/=l;
 	v[1]/=l;
@@ -34,8 +30,7 @@ double Vector3::Normalize()
 	return l;
 }
 
-Vector3 CrossProduct(const Vector3 &v1, const Vector3 &v2)
-{
+Vector3 CrossProduct(const Vector3 &v1, const Vector3 &v2) {
 	Vector3 result;
 	result.v[0] = v1.v[1]*v2.v[2] - v1.v[2]*v2.v[1];
 	result.v[1] = v1.v[2]*v2.v[0] - v1.v[0]*v2.v[2];
@@ -43,14 +38,12 @@ Vector3 CrossProduct(const Vector3 &v1, const Vector3 &v2)
 	return result;
 }
 
-double DotProduct(const Vector3 &v1, const Vector3 &v2)
-{
+double DotProduct(const Vector3 &v1, const Vector3 &v2) {
 	double dot = v1.v[0]*v2.v[0] + v1.v[1]*v2.v[1] + v1.v[2]*v2.v[2];
 	return dot;
 }
 
-Vector3 operator*(const Vector3 & v, double s)
-{
+Vector3 operator*(const Vector3 & v, double s) {
 	Vector3 result;
 	result.v[0] = v.v[0] * s;
 	result.v[1] = v.v[1] * s;
@@ -58,13 +51,11 @@ Vector3 operator*(const Vector3 & v, double s)
 	return result;
 }
 
-Vector3 operator*(double s, const Vector3 & v)
-{
+Vector3 operator*(double s, const Vector3 & v) {
 	return v*s;
 }
 
-Point3 operator+(const Point3 & p, const Vector3 & v)
-{
+Point3 operator+(const Point3 & p, const Vector3 & v) {
 	Point3 result;
 	result.p[0] = p.p[0] + v.v[0];
 	result.p[1] = p.p[1] + v.v[1];
@@ -72,13 +63,11 @@ Point3 operator+(const Point3 & p, const Vector3 & v)
 	return result;
 }
 
-Point3 operator+(const Vector3 & v, const Point3 & p)
-{
+Point3 operator+(const Vector3 & v, const Point3 & p) {
 	return p+v;
 }
 
-Point3 operator-(const Point3 & p, const Vector3 & v)
-{
+Point3 operator-(const Point3 & p, const Vector3 & v) {
 	Point3 result;
 	result.p[0] = p.p[0] - v.v[0];
 	result.p[1] = p.p[1] - v.v[1];
@@ -86,8 +75,7 @@ Point3 operator-(const Point3 & p, const Vector3 & v)
 	return result;
 }
 
-Point3 AffineSum(const Point3 &start, const Point3 & end, double t)
-{
+Point3 AffineSum(const Point3 &start, const Point3 & end, double t) {
 	Point3 result;
 	result.p[0] = start.p[0]*(1-t) + end.p[0]*t;
 	result.p[1] = start.p[1]*(1-t) + end.p[1]*t;
@@ -95,15 +83,13 @@ Point3 AffineSum(const Point3 &start, const Point3 & end, double t)
 	return result;
 }
 
-double DistanceBetweenPoints(const Point3 & p1, const Point3 & p2)
-{
+double DistanceBetweenPoints(const Point3 & p1, const Point3 & p2) {
 	Vector3 v = p1-p2;
 	double l = v.Length();
 	return l;
 }
 
-Vector3 operator+(const Vector3 & v1, const Vector3 & v2)
-{
+Vector3 operator+(const Vector3 & v1, const Vector3 & v2) {
 	Vector3 result;
 	result.v[0] = v1.v[0] + v2.v[0];
 	result.v[1] = v1.v[1] + v2.v[1];
