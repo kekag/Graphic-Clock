@@ -14,7 +14,6 @@
 #include "vector.h"
 
 #include <GL/freeglut.h>
-#include <unistd.h>
 
 using namespace std;
 
@@ -78,8 +77,6 @@ void display(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3dv(white);
 
-	// EulerStep(PS, DeltaT);
-	// MidpointStep(PS, DeltaT);
 	RungeKuttaStep(PS, PS.GetDeltaT() * 2);
 	
 	int N = PS.GetNumParticles();
@@ -141,19 +138,6 @@ void display(void) {
 	glutPostRedisplay();
 }
 
-double GetDeltaTime() {
-	static clock_t start_time = clock();
-	static int current_frame = 0;
-	clock_t current_time = clock();
-	current_frame += 1;
-	double total_time = double(current_time - start_time) / CLOCKS_PER_SEC;
-	if (total_time == 0)
-		total_time = .00001;
-	double frames_per_second = (double)current_frame / total_time;
-	double DT = 1.0 / frames_per_second;
-	return DT;
-}
-
 void Clock() {
 	time_t t = time(0);
 	tm bt{};
@@ -200,7 +184,7 @@ void Clock() {
 	double hourDY = -cos(hd * M_PI / 180) / 3600;
 	
 	// DeltaT
-	PS.SetDeltaT(1000*GetDeltaTime());
+	PS.SetDeltaT(0.1);
 
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);

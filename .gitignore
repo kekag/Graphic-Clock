@@ -3,3 +3,13 @@
 !/**/
 !*.*
 !Makefile
+
+# Visual Studio garbage
+.vs/
+Debug/
+*.sln
+*.vcxproj
+*.vcxproj.*
+
+# Link libraries
+*.dll
