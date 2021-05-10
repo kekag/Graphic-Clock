@@ -31,9 +31,10 @@ double cy = screen_y / 2;
 double secRadius = 200;
 double minRadius = 185;
 double hourRadius = 140;
-
 double dash = 205;
-double dashLen = 5;
+
+int calibrationSamples = 5;
+bool calibrated = false;
 
 ParticleSystem PS;
 
@@ -59,17 +60,14 @@ void DrawLine(double x1, double y1, double x2, double y2, GLfloat lineWidth) {
 
 void DrawText(double x, double y, const char *string) {
 	void *font = GLUT_BITMAP_9_BY_15;
-	// void *font = GLUT_BITMAP_HELVETICA_18;
+
+	glRasterPos2d(x, y);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     glEnable(GL_BLEND);
-	
-	glRasterPos2d(x, y);
 	for (int i = 0; i < (int)strlen(string); i++) {
 		glutBitmapCharacter(font, string[i]);
 	}
-
     glDisable(GL_BLEND);
 }
 
@@ -77,18 +75,22 @@ void display(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3dv(white);
 
-	RungeKuttaStep(PS, PS.GetDeltaT() * 2);
+	RungeKuttaStep(PS, PS.GetDeltaT()*2);
 	
 	int N = PS.GetNumParticles();
 	int NF = PS.GetNumForces();
 
+	// degrees between expected and actual time
+	// negative -> too slow, positive -> too fast
+	double disparaity = 0.0;
+
 	// Draw Spring Forces as edges
 	for(int i = 0; i < NF; i++) {
-		Force * f = PS.GetForce(i);
+		Force *f = PS.GetForce(i);
 		if(f->Type() == SPRING_FORCE) {
-			SpringForce * sf = (SpringForce*)f;
-			Particle * p1 = sf->GetParticle1();
-			Particle * p2 = sf->GetParticle2();
+			SpringForce *sf = (SpringForce*)f;
+			Particle *p1 = sf->GetParticle1();
+			Particle *p2 = sf->GetParticle2();
 			glColor3dv(sf->getColor());
 			DrawLine(p1->GetPositionx(), p1->GetPositiony(),  p2->GetPositionx(), p2->GetPositiony(), 4.0f);
 		}
@@ -96,7 +98,7 @@ void display(void) {
 
 	// Draw Particles
 	for(int i = 0; i < N; i++) {
-		Particle * p = PS.GetParticle(i);
+		Particle *p = PS.GetParticle(i);
 		double radius = p->GetRadius();
 
 		double thePos[DIM];
@@ -116,11 +118,12 @@ void display(void) {
 	for(int deg = -84; deg < 276; deg += 6) {
 		double outX = cos(deg * M_PI / 180) * (dash+5) + cx;
 		double outY = -sin(deg * M_PI / 180) * (dash+5) + cy;
+		// Draw thick dashes each 5 minutes (and hour)
 		if(deg % 30 == 0) {
 			double inX = cos(deg * M_PI / 180) * (dash-3) + cx;
 			double inY = -sin(deg * M_PI / 180) * (dash-3) + cy;
 			DrawLine(inX, inY, outX, outY, 2.25f);
-			// Draw clock numbers (or roman numerals)
+			// Draw clock numbers
 			double textX = cos(deg * M_PI / 180) * (dash+22) + cx;
 			double textY = -sin(deg * M_PI / 180) * (dash+22) + cy - 5;
 			i == 12 ? (textX -= 9) : (textX -= 5);
@@ -169,30 +172,37 @@ void Clock() {
 	snprintf(str, 9, "%d:%02d:%02d", printHour, minute, second);
 	cout << "Current time: " << str << "\n";
 
+	// delta factor
+	double f = 50;
+
 	// Second degree, no offset needed
 	double secdeg = second * 6;
 	// Adjust so 0-degree is on 12 instead of 3
 	double sd = fmod(secdeg-90, 360);
 	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
 	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
-	double secondDX = -sin(sd * M_PI / 180);
-	double secondDY = -cos(sd * M_PI / 180);
+	double secondDX = -sin(sd * M_PI / 180) * f;
+	double secondDY = -cos(sd * M_PI / 180) * f;
 	
 	// Minute degree with 0-6 deg. second offset
 	double mindeg = minute * 6 + secdeg / 60;
 	double md =  fmod(mindeg-90, 360);
 	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
 	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
-	double minuteDX = -sin(md * M_PI / 180) / 60;
-	double minuteDY = -cos(md * M_PI / 180) / 60;
+	double minuteDX = -sin(md * M_PI / 180) * f / 60;
+	double minuteDY = -cos(md * M_PI / 180) * f / 60;
 
 	// Hour degree with 0-30 deg. minute offset
 	double hrdeg = hour * 30 + mindeg / 12;
 	double hd = fmod(hrdeg-90, 360);
 	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
 	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
-	double hourDX = -sin(hd * M_PI / 180) / 3600;
-	double hourDY = -cos(hd * M_PI / 180) / 3600;
+	double hourDX = -sin(hd * M_PI / 180) * f / 3600;
+	double hourDY = -cos(hd * M_PI / 180) * f / 3600;
+
+	// cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
+	// cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
+	// cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
 	
 	// DeltaT
 	PS.SetDeltaT(1000*GetDeltaTime());
@@ -201,24 +211,14 @@ void Clock() {
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
 	PS.AddParticle(p1);
 
-	const int sample_time = 3;
-
-	// degrees between expected and actual time
-	// negative -> too slow, positive -> too fast
-	double disparaity = 0.0;
-
-	// calibration factor
-	double c = 66;
-	// double c = 1;
-
 	// second, minute, hour
-	Particle* p2 = new Particle(secondX, secondY, secondDX*c, secondDY*c, 2, 0);
+	Particle* p2 = new Particle(secondX, secondY, secondDX, secondDY, 2, 0);
 	PS.AddParticle(p2);
 
-	Particle* p3 = new Particle(minuteX, minuteY, minuteDX*c, minuteDY*c, 2, 0);
+	Particle* p3 = new Particle(minuteX, minuteY, minuteDX, minuteDY, 2, 0);
 	PS.AddParticle(p3);
 
-	Particle* p4 = new Particle(hourX, hourY, hourDX*c, hourDY*c, 2, 0);
+	Particle* p4 = new Particle(hourX, hourY, hourDX, hourDY, 2, 0);
 	PS.AddParticle(p4);
 
 	// second, minute, hour
