@@ -45,7 +45,7 @@ double dash = 205;
 // display 60 frames per 1000 milliseconds
 static int redisplayInterval = 1000 / 60;
 vector<double> frameTimes;
-int frameSamples = 5000;
+int frameSamples = 1000;
 int frame = 0;
 
 ParticleSystem PS;
@@ -120,8 +120,8 @@ void wallClock() {
 	double md = fmod(mindeg - 90, 360);
 	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
 	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
-	double minuteDX = -sin(md * M_PI / 180) * f / /*60*/ 55;
-	double minuteDY = -cos(md * M_PI / 180) * f / /*60*/ 55;
+	double minuteDX = -sin(md * M_PI / 180) * f / /*60*/ 50;
+	double minuteDY = -cos(md * M_PI / 180) * f / /*60*/ 50;
 
 	// Hour degree with 0-30 deg. minute offset
 	double hrdeg = hour * 30 + mindeg / 12;
