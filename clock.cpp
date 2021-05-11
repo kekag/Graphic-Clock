@@ -32,9 +32,9 @@ double screen_y = 500;
 double cx = screen_x / 2;
 double cy = screen_y / 2;
 
-bool reshaping = false;
-bool prevReshaping = false;
-bool firstReshape = true;
+// bool reshaping = false;
+// bool prevReshaping = false;
+// bool firstReshape = true;
 
 // clock hand radii
 double secRadius = 200;
@@ -44,22 +44,11 @@ double dash = 205;
 
 // display 60 frames per 1000 milliseconds
 static int redisplayInterval = 1000 / 60;
+vector<double> frameTimes;
+int frameSamples = 5000;
+int frame = 0;
 
 ParticleSystem PS;
-
-// double getDT() {
-// 	static clock_t start_time = clock();
-// 	static int current_frame = 0;
-// 	clock_t current_time = clock();
-// 	current_frame += 1;
-// 	double total_time = double(current_time - start_time) / CLOCKS_PER_SEC;
-// 	if (total_time == 0)
-// 		total_time = .00001;
-// 	double frames_per_second = (double)current_frame / total_time;
-// 	double dt = 1.0 / frames_per_second;
-// 	cout << dt << endl;
-// 	return dt;
-// }
 
 void displayCircle(double x1, double y1, double radius) {
 	glBegin(GL_POLYGON);
@@ -146,9 +135,6 @@ void wallClock() {
 	// cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
 	// cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
 
-	// DeltaT
-	// PS.SetDeltaT(0.001);
-
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
 	PS.AddParticle(p1);
@@ -177,12 +163,16 @@ void wallClock() {
 	PS.AddForce(s3);
 
 	clock_t end = clock();
-	double newDT = (end-start)/15000.0;
-	cout << newDT << endl;
-	PS.SetDeltaT(newDT);
+	double approxDT = (double)(end-start) / 5800.0;
+	if (approxDT == 0) {
+		approxDT = 0.0001;
+	}
+	cout << "Temp DT: " << approxDT << endl;
+	PS.SetDeltaT(approxDT);
 }
 
 void render(void) {
+	clock_t start = clock();
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3dv(white);
 	
@@ -257,6 +247,23 @@ void render(void) {
 	}
 
 	glutSwapBuffers();
+
+	clock_t end = clock();
+	if (frame == frameSamples) {
+		double total = 0;
+		for (double time : frameTimes) {
+			total += time;
+		}
+		double calcDT = total/(double)frameSamples / 2900.0;
+		cout << "DT: " << calcDT << endl;
+		PS.SetDeltaT(calcDT);
+		frame++;
+	} else if (frame < frameSamples) {
+		frameTimes.push_back(end - start);
+		frame++;
+	}
+
+
 	glutPostRedisplay();
 }
 
@@ -313,7 +320,7 @@ int main(int argc, char **argv) {
 	glClearColor(0.9f, 0.9f, 0.9f, 0.0f);	
 	wallClock();
 
-	reshaping = false;
+	// reshaping = false;
 	glutMainLoop();
 	return 0;
 }
