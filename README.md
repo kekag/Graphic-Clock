@@ -10,4 +10,4 @@ Download the respective prepackaged [Windows binary](https://www.transmissionzer
 
 ---
 
-![example](clock_display.png)
+![example](clock.gif)
