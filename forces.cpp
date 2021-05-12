@@ -92,6 +92,11 @@ void SpringForce::setSize(double size) {
 	spring_size = size;
 }
 
+void SpringForce::setRestLength(double length) {
+	rest_length = length;
+	Apply();
+}
+
 FORCE_TYPE SpringForce::Type() {
 	return SPRING_FORCE;
 }

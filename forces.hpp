@@ -31,6 +31,7 @@ public:
 	void setColor(double spring_color[]);
 	double getSize();
 	void setSize(double size);
+	void setRestLength(double rest_length);
 
 private:
 	Particle* p1;

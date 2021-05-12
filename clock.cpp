@@ -35,10 +35,10 @@ double cx = screen_x / 2;
 double cy = screen_y / 2;
 
 // clock hand radii
-double secRadius = 200;
-double minRadius = 185;
-double hourRadius = 130;
-double dash = 205;
+double secRadius = min(cx, cy) - 50;
+double minRadius = min(cx, cy) - 65;
+double hourRadius = min(cx, cy) - 125;
+double dash = min(cx, cy) - 25;
 
 // display 60 frames per 1000 milliseconds
 static int redisplayInterval = 1000 / 60;
@@ -195,7 +195,7 @@ void render(void) {
 			Particle* p1 = sf->GetParticle1();
 			Particle* p2 = sf->GetParticle2();
 			glColor3dv(sf->getColor());
-			displayLine(p1->GetPositionx(), p1->GetPositiony(), p2->GetPositionx(), p2->GetPositiony(), sf->getSize());
+			displayLine(p1->GetPositionX(), p1->GetPositionY(), p2->GetPositionX(), p2->GetPositionY(), sf->getSize());
 		}
 	}
 
@@ -222,16 +222,16 @@ void render(void) {
 	int i = 1;
 	char str[3];
 	for (int deg = -84; deg < 276; deg += 6) {
-		double outX = cos(deg * M_PI / 180) * (dash + 5) + cx;
-		double outY = -sin(deg * M_PI / 180) * (dash + 5) + cy;
+		double outX = cos(deg * M_PI / 180) * (dash + 4) + cx;
+		double outY = -sin(deg * M_PI / 180) * (dash + 4) + cy;
 		// Draw thick dashes each 5 minutes (and hour)
 		if (deg % 30 == 0) {
-			double inX = cos(deg * M_PI / 180) * (dash - 3) + cx;
-			double inY = -sin(deg * M_PI / 180) * (dash - 3) + cy;
+			double inX = cos(deg * M_PI / 180) * (dash - 4) + cx;
+			double inY = -sin(deg * M_PI / 180) * (dash - 4) + cy;
 			displayLine(inX, inY, outX, outY, 2.25f);
 			// Draw clock numbers
-			double textX = cos(deg * M_PI / 180) * (dash + 22) + cx;
-			double textY = -sin(deg * M_PI / 180) * (dash + 22) + cy - 5;
+			double textX = cos(deg * M_PI / 180) * (dash - 20) + cx;
+			double textY = -sin(deg * M_PI / 180) * (dash - 20) + cy - 5;
 			i == 12 ? (textX -= 9) : (textX -= 5);
 			snprintf(str, 3, "%d", i);
 			displayText(textX, textY, str);
@@ -298,10 +298,35 @@ void keyboard(unsigned char c, int x, int y) {
 }
 
 void reshape(int width, int height) {
+	double prev_x = screen_x / 2;
+	double prev_y = screen_y / 2;
 	screen_x = width;
 	screen_y = height;
 	cx = width / 2;
 	cy = height / 2;
+
+	// Change hand and dash radii
+	secRadius = min(cx, cy) - 50;
+	minRadius = min(cx, cy) - 65;
+	hourRadius = min(cx, cy) - 125;
+	dash = min(cx, cy) - 25; 
+
+	// Adjust hand sizes
+	SpringForce* second = (SpringForce*)PS.GetForce(0);
+	SpringForce* minute = (SpringForce*)PS.GetForce(1);
+	SpringForce* hour = (SpringForce*)PS.GetForce(2);
+	second->setRestLength(secRadius);
+	minute->setRestLength(minRadius);
+	hour->setRestLength(hourRadius);
+
+	// Adjust particle positions
+	int N = PS.GetNumParticles();
+	double offset = min(cx, cy) - min(prev_x, prev_y);
+	for (int i = 0; i < N; i++) {
+		Particle* p = PS.GetParticle(i);
+		p->SetPositionX(p->GetPositionX() + offset);
+		p->SetPositionY(p->GetPositionY() + offset);
+	}
 
 	glViewport(0, 0, width, height);
 
