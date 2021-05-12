@@ -271,7 +271,7 @@ void render(void) {
 		endMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
 		);
-		double DT = (endMS.count() - startMS.count()) / (2450.0 * frame);
+		double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
 		cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 		PS.SetDeltaT(DT);
 		frame = 0;
