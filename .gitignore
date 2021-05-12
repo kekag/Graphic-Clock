@@ -11,5 +11,8 @@ Debug/
 *.vcxproj
 *.vcxproj.*
 
+# Visual Studio Code garbage
+.vscode/
+
 # Link libraries
 *.dll

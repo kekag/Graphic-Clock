@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cmath>
 #include <ctime>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -32,10 +33,6 @@ double screen_y = 500;
 double cx = screen_x / 2;
 double cy = screen_y / 2;
 
-// bool reshaping = false;
-// bool prevReshaping = false;
-// bool firstReshape = true;
-
 // clock hand radii
 double secRadius = 200;
 double minRadius = 185;
@@ -44,9 +41,11 @@ double dash = 205;
 
 // display 60 frames per 1000 milliseconds
 static int redisplayInterval = 1000 / 60;
-vector<double> frameTimes;
-int frameSamples = 1000;
+vector<int> samples{ 64, 128, 256 };
+int iter = 0;
 int frame = 0;
+chrono::milliseconds startMS;
+chrono::milliseconds endMS;
 
 ParticleSystem PS;
 
@@ -172,20 +171,14 @@ void wallClock() {
 }
 
 void render(void) {
-	clock_t start = clock();
+	if (frame == 0 && iter < samples.size()) {
+		startMS = chrono::duration_cast<chrono::milliseconds>(
+			chrono::system_clock::now().time_since_epoch()
+		);
+	}
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3dv(white);
-	
-	// if (reshaping) {
-	// 	prevReshaping = true;
-	// 	return;
-	// }
-	// else if (prevReshaping) {
-	// 	wallClock();
-	// }
-	// 
-	// reshaping = false;
-	// prevReshaping = false;
 
 	RungeKuttaStep(PS, PS.GetDeltaT());
 
@@ -248,18 +241,18 @@ void render(void) {
 
 	glutSwapBuffers();
 
-	clock_t end = clock();
-	if (frame == frameSamples) {
-		double total = 0;
-		for (double time : frameTimes) {
-			total += time;
-		}
-		double calcDT = total/(double)frameSamples / 2900.0;
-		cout << "DT: " << calcDT << endl;
-		PS.SetDeltaT(calcDT);
-		frame++;
-	} else if (frame < frameSamples) {
-		frameTimes.push_back(end - start);
+	// double ms_deg = (MS.count()%60000 / 166.6666667);
+	// double actual_deg = atan(S->GetPositiony()/S->GetPositionx());
+	if (frame == samples[iter] && iter < samples.size()) {
+		endMS = chrono::duration_cast<chrono::milliseconds>(
+			chrono::system_clock::now().time_since_epoch()
+		);
+		double DT = (endMS.count()-startMS.count())/(2400.0*frame);
+		cout << "DT after " << samples[iter] << " samples: " << DT << endl;
+		PS.SetDeltaT(DT);
+		frame = 0;
+		iter++;
+	} else if (iter < samples.size()){
 		frame++;
 	}
 
@@ -290,12 +283,6 @@ void reshape(int width, int height) {
 
 	gluOrtho2D(0, width, 0, height);
 	glMatrixMode(GL_MODELVIEW);
-
-	// if (firstReshape) {
-	// 	firstReshape = false;
-	// 	return;
-	// }
-	// reshaping = true;
 }
 
 void timer(int) {
@@ -320,7 +307,6 @@ int main(int argc, char **argv) {
 	glClearColor(0.9f, 0.9f, 0.9f, 0.0f);	
 	wallClock();
 
-	// reshaping = false;
 	glutMainLoop();
 	return 0;
 }
