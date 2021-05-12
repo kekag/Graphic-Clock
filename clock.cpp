@@ -26,6 +26,7 @@ using namespace std;
 GLdouble red[] = { 1.0, 0.0, 0.0, 1.0 };
 GLdouble white[] = { 1.0, 1.0, 1.0, 1.0 };
 GLdouble black[] = { 0.0, 0.0, 0.0, 1.0 };
+GLdouble clear[] = { 0.9, 0.9, 0.9, 0.0 };
 
 double screen_x = 500;
 double screen_y = 500;
@@ -36,7 +37,7 @@ double cy = screen_y / 2;
 // clock hand radii
 double secRadius = 200;
 double minRadius = 185;
-double hourRadius = 140;
+double hourRadius = 130;
 double dash = 205;
 
 // display 60 frames per 1000 milliseconds
@@ -46,6 +47,7 @@ int iter = 0;
 int frame = 0;
 chrono::milliseconds startMS;
 chrono::milliseconds endMS;
+bool doneSampling = false;
 
 ParticleSystem PS;
 
@@ -106,25 +108,25 @@ void wallClock() {
 	double f = 50;
 
 	// Second degree, no offset needed
-	double secdeg = second * 6;
+	double secDeg = second * 6;
 	// Adjust so 0-degree is on 12 instead of 3
-	double sd = fmod(secdeg - 90, 360);
+	double sd = fmod(secDeg - 90, 360);
 	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
 	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
 	double secondDX = -sin(sd * M_PI / 180) * f;
 	double secondDY = -cos(sd * M_PI / 180) * f;
 
 	// Minute degree with 0-6 deg. second offset
-	double mindeg = minute * 6 + secdeg / 60;
-	double md = fmod(mindeg - 90, 360);
+	double minDeg = minute * 6 + secDeg / 60;
+	double md = fmod(minDeg - 90, 360);
 	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
 	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
-	double minuteDX = -sin(md * M_PI / 180) * f / /*60*/ 50;
-	double minuteDY = -cos(md * M_PI / 180) * f / /*60*/ 50;
+	double minuteDX = -sin(md * M_PI / 180) * f / /*60*/ 55;
+	double minuteDY = -cos(md * M_PI / 180) * f / /*60*/ 55;
 
 	// Hour degree with 0-30 deg. minute offset
-	double hrdeg = hour * 30 + mindeg / 12;
-	double hd = fmod(hrdeg - 90, 360);
+	double hourDeg = hour * 30 + minDeg / 12;
+	double hd = fmod(hourDeg - 90, 360);
 	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
 	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
 	double hourDX = -sin(hd * M_PI / 180) * f / /*3600*/ 1000;
@@ -139,25 +141,25 @@ void wallClock() {
 	PS.AddParticle(p1);
 
 	// second, minute, hour
-	Particle* p2 = new Particle(secondX, secondY, secondDX, secondDY, 2, 0);
+	Particle* p2 = new Particle(secondX, secondY, secondDX, secondDY, 10, 0);
 	PS.AddParticle(p2);
 
-	Particle* p3 = new Particle(minuteX, minuteY, minuteDX, minuteDY, 2, 0);
+	Particle* p3 = new Particle(minuteX, minuteY, minuteDX, minuteDY, 10, 0);
 	PS.AddParticle(p3);
 
-	Particle* p4 = new Particle(hourX, hourY, hourDX, hourDY, 2, 0);
+	Particle* p4 = new Particle(hourX, hourY, hourDX, hourDY, 10, 0);
 	PS.AddParticle(p4);
 
 	// second, minute, hour
-	SpringForce* s1 = new SpringForce(p1, p2, 10000, 200, secRadius);
+	SpringForce* s1 = new SpringForce(p1, p2, 10000, 2.0, 200, secRadius);
 	s1->setColor(red);
 	PS.AddForce(s1);
 
-	SpringForce* s2 = new SpringForce(p1, p3, 10000, 200, minRadius);
+	SpringForce* s2 = new SpringForce(p1, p3, 10000, 3.5, 200, minRadius);
 	s2->setColor(black);
 	PS.AddForce(s2);
 
-	SpringForce* s3 = new SpringForce(p1, p4, 10000, 200, hourRadius);
+	SpringForce* s3 = new SpringForce(p1, p4, 10000, 4.5, 200, hourRadius);
 	s3->setColor(black);
 	PS.AddForce(s3);
 
@@ -166,12 +168,12 @@ void wallClock() {
 	if (approxDT == 0) {
 		approxDT = 0.0001;
 	}
-	cout << "Temp DT: " << approxDT << endl;
+	cout << "Temp approximate DT: " << approxDT << endl;
 	PS.SetDeltaT(approxDT);
 }
 
 void render(void) {
-	if (frame == 0 && iter < samples.size()) {
+	if (frame == 0 && !doneSampling) {
 		startMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
 		);
@@ -193,10 +195,12 @@ void render(void) {
 			Particle* p1 = sf->GetParticle1();
 			Particle* p2 = sf->GetParticle2();
 			glColor3dv(sf->getColor());
-			displayLine(p1->GetPositionx(), p1->GetPositiony(), p2->GetPositionx(), p2->GetPositiony(), 4.0f);
+			displayLine(p1->GetPositionx(), p1->GetPositiony(), p2->GetPositionx(), p2->GetPositiony(), sf->getSize());
 		}
 	}
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	// Draw Particles
 	for (int i = 0; i < N; i++) {
 		Particle* p = PS.GetParticle(i);
@@ -205,11 +209,12 @@ void render(void) {
 		double thePos[DIM];
 		p->GetPosition(thePos);
 		if (p->GetAnchored())
-			glColor3dv(red);
+			glColor4dv(red);
 		else
-			glColor3dv(white);
+			glColor4dv(clear);
 		displayCircle(thePos[0], thePos[1], radius);
 	}
+	glDisable(GL_BLEND);
 
 	glColor3dv(black);
 
@@ -241,21 +246,43 @@ void render(void) {
 
 	glutSwapBuffers();
 
-	// double ms_deg = (MS.count()%60000 / 166.6666667);
-	// double actual_deg = atan(S->GetPositiony()/S->GetPositionx());
-	if (frame == samples[iter] && iter < samples.size()) {
+	// Get DT arc length disparity
+	// double expectedDeg = (endMS.count() % 60000 / 166.6666667);
+	// Particle* S = PS.GetParticle(1);
+	// double actualDeg = atan((S->GetPositiony() + cy) / (S->GetPositionx() + cx));
+	// Get DT from arc length disparities (2 * pi * radius * (theta / 360))
+	// double smallestTheta;
+	// if (expectedDeg < actualDeg) {
+	// 	smallestTheta = actualDeg - expectedDeg;
+	// }
+	// else {
+	// 	smallestTheta = expectedDeg - actualDeg;
+	// }
+	// if (smallestTheta > 180) {
+	// 	smallestTheta = 360 - smallestTheta;
+	// }
+	// double arcLen = 2 * M_PI * secRadius * (smallestTheta / 360);
+	// negative -> DT too slow, positive -> DT too fast
+	// if (expectedDeg >= actualDeg) {
+	// 	arcLen = -arcLen;
+	// }
+
+	if (frame == samples[iter] && !doneSampling) {
 		endMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
 		);
-		double DT = (endMS.count()-startMS.count())/(2400.0*frame);
-		cout << "DT after " << samples[iter] << " samples: " << DT << endl;
+		double DT = (endMS.count() - startMS.count()) / (2450.0 * frame);
+		cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 		PS.SetDeltaT(DT);
 		frame = 0;
-		iter++;
-	} else if (iter < samples.size()){
+		if (iter < samples.size() - 1) {
+			iter++;
+		} else {
+			doneSampling = true;
+		}
+	} else if (!doneSampling){
 		frame++;
 	}
-
 
 	glutPostRedisplay();
 }
@@ -295,7 +322,7 @@ int main(int argc, char **argv) {
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize((int)screen_x, (int)screen_y);
-	glutInitWindowPosition(200, 200);
+	glutInitWindowPosition(300, 300);
 	glutCreateWindow("Clock");
 	
 	glutDisplayFunc(render);

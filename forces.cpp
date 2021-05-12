@@ -7,8 +7,8 @@
 using namespace std;
 
 // Spring Force
-SpringForce::SpringForce(Particle* p1_temp, Particle* p2_temp, double spring_constant_temp, double damping_constant_temp, double rest_length_temp)
-		: p1(p1_temp), p2(p2_temp), spring_constant(spring_constant_temp), damping_constant(damping_constant_temp), rest_length(rest_length_temp) {
+SpringForce::SpringForce(Particle* p1_temp, Particle* p2_temp, double spring_constant_temp, double size_temp, double damping_constant_temp, double rest_length_temp)
+		: p1(p1_temp), p2(p2_temp), spring_constant(spring_constant_temp), spring_size(size_temp),  damping_constant(damping_constant_temp), rest_length(rest_length_temp) {
 
 	if (rest_length_temp == 0) {
 		double pos1[DIM];
@@ -82,6 +82,14 @@ void SpringForce::setColor(double spring_color_temp[]) {
 	spring_color[1] = spring_color_temp[1];
 	spring_color[2] = spring_color_temp[2];
 	spring_color[3] = spring_color_temp[3];
+}
+
+double SpringForce::getSize() {
+	return spring_size;
+}
+
+void SpringForce::setSize(double size) {
+	spring_size = size;
 }
 
 FORCE_TYPE SpringForce::Type() {
