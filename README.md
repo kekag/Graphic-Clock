@@ -1,6 +1,5 @@
-# Graphic-Clock
-Lightweight graphic wall-clock using OpenGL and FreeGLUT. Instead of drawing each hand based on the current system time each frame, this generates an inital X, Y, ΔX, and ΔY for each hand from a single snapshot, then adjusts delta time based on the average frametimes for the redisplay function.
-
+# Graphical Wall Clock
+Lightweight graphic wall-clock using **[OpenGL](https://www.opengl.org)** and **[FreeGLUT](http://freeglut.sourceforge.net)**. Instead of drawing each hand based on the current system time each frame, this generates an inital X, Y, ΔX, and ΔY for each hand from a single snapshot, then adjusts delta time based on the average frametimes for the redisplay function.
 
 ### Linux FreeGLUT install
 `sudo apt-get install freeglut3-dev`
