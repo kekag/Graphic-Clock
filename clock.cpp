@@ -49,6 +49,9 @@ chrono::milliseconds startMS;
 chrono::milliseconds endMS;
 bool doneSampling = false;
 
+// reshaping
+double initialDT;
+
 ParticleSystem PS;
 
 void displayCircle(double x1, double y1, double radius) {
@@ -121,20 +124,21 @@ void wallClock() {
 	double md = fmod(minDeg - 90, 360);
 	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
 	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
-	double minuteDX = -sin(md * M_PI / 180) * f / /*60*/ 55;
-	double minuteDY = -cos(md * M_PI / 180) * f / /*60*/ 55;
+	double minuteDX = -sin(md * M_PI / 180) * f / 60;
+	double minuteDY = -cos(md * M_PI / 180) * f / 60;
 
 	// Hour degree with 0-30 deg. minute offset
 	double hourDeg = hour * 30 + minDeg / 12;
 	double hd = fmod(hourDeg - 90, 360);
 	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
 	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
-	double hourDX = -sin(hd * M_PI / 180) * f / /*3600*/ 1000;
-	double hourDY = -cos(hd * M_PI / 180) * f / /*3600*/ 1000;
+	double hourDX = -sin(hd * M_PI / 180) * f / /*3600*/ 1800;
+	double hourDY = -cos(hd * M_PI / 180) * f / /*3600*/ 1800;
 
-	// cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
-	// cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
-	// cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
+	cout << "Inital values" << endl;
+	cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
+	cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
+	cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
 
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
@@ -151,15 +155,15 @@ void wallClock() {
 	PS.AddParticle(p4);
 
 	// second, minute, hour
-	SpringForce* s1 = new SpringForce(p1, p2, 10000, 2.0, 200, secRadius);
+	SpringForce* s1 = new SpringForce(p1, p2, 10000, 2.0, 10000, secRadius);
 	s1->setColor(red);
 	PS.AddForce(s1);
 
-	SpringForce* s2 = new SpringForce(p1, p3, 10000, 3.5, 200, minRadius);
+	SpringForce* s2 = new SpringForce(p1, p3, 10000, 3.5, 1000, minRadius);
 	s2->setColor(black);
 	PS.AddForce(s2);
 
-	SpringForce* s3 = new SpringForce(p1, p4, 10000, 4.5, 200, hourRadius);
+	SpringForce* s3 = new SpringForce(p1, p4, 10000, 4.5, 1000, hourRadius);
 	s3->setColor(black);
 	PS.AddForce(s3);
 
@@ -170,6 +174,90 @@ void wallClock() {
 	}
 	cout << "Temp approximate DT: " << approxDT << endl;
 	PS.SetDeltaT(approxDT);
+}
+
+void NoPSrender(void) {
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColor3dv(white);
+
+	chrono::milliseconds current = chrono::duration_cast<chrono::milliseconds>(
+		chrono::system_clock::now().time_since_epoch()
+	);
+	
+	int millisecond = current.count() % 1000;
+	int second = (current.count() / 1000) % 60;
+	int minute = (current.count() / 60000) % 60;
+	// This gets unix hour since epoch, need to use tm struct and localtime function to get timezone
+	// int hour = (current.count() / 3600000) % 12;
+
+	clock_t start = clock();
+	time_t t = time(0);
+	tm bt{};
+#if WIN32
+	localtime_s(&bt, &t);
+#else 
+	localtime_r(&t, &bt);
+#endif
+	int hour = bt.tm_hour % 12;
+
+	// Second degree, no offset needed
+	double secDeg = second * 6 + millisecond / 166.6667;
+	// Adjust so 0-degree is on 12 instead of 3
+	double sd = fmod(secDeg - 90, 360);
+	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
+	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
+
+	// Minute degree with 0-6 deg. second offset
+	double minDeg = minute * 6 + secDeg / 60;
+	double md = fmod(minDeg - 90, 360);
+	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
+	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
+
+	// Hour degree with 0-30 deg. minute offset
+	double hourDeg = hour * 30 + minDeg / 12;
+	double hd = fmod(hourDeg - 90, 360);
+	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
+	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
+
+	// Draw lines
+	glColor3dv(red);
+	displayLine(cx, cy, secondX, secondY, 2.0);
+	glColor3dv(black);
+	displayLine(cx, cy, minuteX, minuteY, 3.5);
+	displayLine(cx, cy, hourX, hourY, 4.5);
+
+	// Draw center particle
+	glColor3dv(red);
+	displayCircle(cx, cy, 10);
+
+	// Draw reference dashes
+	glColor3dv(black);
+	int i = 1;
+	char str[3];
+	for (int deg = -84; deg < 276; deg += 6) {
+		double outX = cos(deg * M_PI / 180) * (dash + 4) + cx;
+		double outY = -sin(deg * M_PI / 180) * (dash + 4) + cy;
+		// Draw thick dashes each 5 minutes (and hour)
+		if (deg % 30 == 0) {
+			double inX = cos(deg * M_PI / 180) * (dash - 4) + cx;
+			double inY = -sin(deg * M_PI / 180) * (dash - 4) + cy;
+			displayLine(inX, inY, outX, outY, 2.25f);
+			// Draw clock numbers
+			double textX = cos(deg * M_PI / 180) * (dash - 20) + cx;
+			double textY = -sin(deg * M_PI / 180) * (dash - 20) + cy - 5;
+			i == 12 ? (textX -= 9) : (textX -= 5);
+			snprintf(str, 3, "%d", i);
+			displayText(textX, textY, str);
+			i++;
+		}
+		else {
+			double inX = cos(deg * M_PI / 180) * dash + cx;
+			double inY = -sin(deg * M_PI / 180) * dash + cy;
+			displayLine(inX, inY, outX, outY, 1.0f);
+		}
+	}
+	glutSwapBuffers();
+	glutPostRedisplay();
 }
 
 void render(void) {
@@ -274,6 +362,7 @@ void render(void) {
 		double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
 		cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 		PS.SetDeltaT(DT);
+		initialDT = DT;
 		frame = 0;
 		if (iter < samples.size() - 1) {
 			iter++;
@@ -311,14 +400,6 @@ void reshape(int width, int height) {
 	hourRadius = min(cx, cy) - 125;
 	dash = min(cx, cy) - 25; 
 
-	// Adjust hand sizes
-	SpringForce* second = (SpringForce*)PS.GetForce(0);
-	SpringForce* minute = (SpringForce*)PS.GetForce(1);
-	SpringForce* hour = (SpringForce*)PS.GetForce(2);
-	second->setRestLength(secRadius);
-	minute->setRestLength(minRadius);
-	hour->setRestLength(hourRadius);
-
 	// Center particle
 	Particle* p = PS.GetParticle(0);
 	double prevX = p->GetPositionX();
@@ -328,7 +409,7 @@ void reshape(int width, int height) {
 	double offsetX = cx - prevX;
 	double offsetY = cy - prevY;
 
-	// Adjust hand particle positions
+	// Adjust hand particle positions based on offset 
 	int N = PS.GetNumParticles();
 	for (int i = 1; i < N; i++) {
 		Particle* p = PS.GetParticle(i);
@@ -336,11 +417,23 @@ void reshape(int width, int height) {
 		p->SetPositionY(p->GetPositionY() + offsetY);
 	}
 
-	glViewport(0, 0, width, height);
+	// Adjust hand sizes after repositioning
+	SpringForce* second = (SpringForce*)PS.GetForce(0);
+	SpringForce* minute = (SpringForce*)PS.GetForce(1);
+	SpringForce* hour = (SpringForce*)PS.GetForce(2);
+	second->setRestLength(secRadius);
+	minute->setRestLength(minRadius);
+	hour->setRestLength(hourRadius);
 
+	// Adjust DT based on relative hand sizes
+	double ratio = min(cx, cy) / 250;
+	double scale = initialDT*ratio;
+	double disparity = scale - PS.GetDeltaT();
+	PS.SetDeltaT(PS.GetDeltaT() + disparity);
+
+	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
 	gluOrtho2D(0, width, 0, height);
 	glMatrixMode(GL_MODELVIEW);
 }
@@ -358,7 +451,11 @@ int main(int argc, char **argv) {
 	glutInitWindowPosition(300, 300);
 	glutCreateWindow("Clock");
 	
-	glutDisplayFunc(render);
+	// Uses particle system with delta X and Y initializers and Runge Kutta step method to approximate time
+	// glutDisplayFunc(render);
+	// Gets actual system time each frame and calculates X and Y positions based on that
+	glutDisplayFunc(NoPSrender);
+
 	glutKeyboardFunc(keyboard);
 	glutReshapeFunc(reshape);
 
