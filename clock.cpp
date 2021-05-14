@@ -319,13 +319,21 @@ void reshape(int width, int height) {
 	minute->setRestLength(minRadius);
 	hour->setRestLength(hourRadius);
 
-	// Adjust particle positions
+	// Center particle
+	Particle* p = PS.GetParticle(0);
+	double prevX = p->GetPositionX();
+	double prevY = p->GetPositionY();
+	p->SetPositionX(cx);
+	p->SetPositionY(cy);
+	double offsetX = cx - prevX;
+	double offsetY = cy - prevY;
+
+	// Adjust hand particle positions
 	int N = PS.GetNumParticles();
-	double offset = min(cx, cy) - min(prev_x, prev_y);
-	for (int i = 0; i < N; i++) {
+	for (int i = 1; i < N; i++) {
 		Particle* p = PS.GetParticle(i);
-		p->SetPositionX(p->GetPositionX() + offset);
-		p->SetPositionY(p->GetPositionY() + offset);
+		p->SetPositionX(p->GetPositionX() + offsetX);
+		p->SetPositionY(p->GetPositionY() + offsetY);
 	}
 
 	glViewport(0, 0, width, height);
