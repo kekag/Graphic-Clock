@@ -35,10 +35,10 @@ double cx = screen_x / 2;
 double cy = screen_y / 2;
 
 // clock hand radii
-double secRadius = min(cx, cy) - 50;
-double minRadius = min(cx, cy) - 65;
-double hourRadius = min(cx, cy) - 125;
-double dash = min(cx, cy) - 25;
+double secRadius = min(cx, cy) - (min(cx, cy) / 5);
+double minRadius = min(cx, cy) - (min(cx, cy) / 4);
+double hourRadius = min(cx, cy) - (min(cx, cy) / 2);
+double dash = min(cx, cy) - (min(cx, cy) / 10);
 
 // display 60 frames per 1000 milliseconds
 static int redisplayInterval = 1000 / 60;
@@ -395,10 +395,10 @@ void reshape(int width, int height) {
 	cy = height / 2;
 
 	// Change hand and dash radii
-	secRadius = min(cx, cy) - 50;
-	minRadius = min(cx, cy) - 65;
-	hourRadius = min(cx, cy) - 125;
-	dash = min(cx, cy) - 25; 
+	secRadius = min(cx, cy) - (min(cx, cy)/5);
+	minRadius = min(cx, cy) - (min(cx, cy)/4);
+	hourRadius = min(cx, cy) - (min(cx, cy)/2);
+	dash = min(cx, cy) - (min(cx, cy)/10); 
 
 	// Center particle
 	Particle* p = PS.GetParticle(0);
