@@ -324,10 +324,12 @@ void render(void) {
 		endMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
 		);
-		double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
-		cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
-		PS.SetDeltaT(DT);
-		initialDT = DT;
+		if (iter < 2) {
+			double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
+			cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
+			PS.SetDeltaT(DT);
+			initialDT = DT;
+		}
 		
 		// Get arc length disparity
 		double expectedDeg = (endMS.count() % 60000 / 166.6666667);
@@ -373,7 +375,7 @@ void render(void) {
 		cout << "current DT: " << currentDT << endl;
 		double adjustment = arc * (currentDT / 1000.0);
 		cout << "adjustment: " << adjustment << endl;
-		DT = currentDT + adjustment;
+		double DT = currentDT + adjustment;
 		cout << "DT: " << DT << endl;
 		
 		PS.SetDeltaT(DT);
