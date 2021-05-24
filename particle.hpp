@@ -34,24 +34,24 @@ public:
 	double GetPositionX() { return pos[0]; }
 	double GetDirectionX() { return dir[0]; }
 	double GetForceX() { return f[0]; }
-	void SetPositionX(double x) {pos[0] = x;}
-	void SetDirectionX(double x) {dir[0] = x;}
-	void SetForceX(double x) {f[0] = x;}
+	void SetPositionX(double x) { pos[0] = x; }
+	void SetDirectionX(double x) { dir[0] = x; }
+	void SetForceX(double x) { f[0] = x; }
 
 	double GetPositionY() { return pos[1]; }
 	double GetDirectionY() { return dir[1]; }
 	double GetForceY() { return f[1]; }
-	void SetPositionY(double y) {pos[1] = y;}
-	void SetDirectionY(double y) {dir[1] = y;}
-	void SetForceY(double y) {f[1] = y;}
+	void SetPositionY(double y) { pos[1] = y; }
+	void SetDirectionY(double y) { dir[1] = y; }
+	void SetForceY(double y) { f[1] = y; }
 
 private:
 	double pos[DIM]; // position
 	double dir[DIM]; // velocity
-	double f[DIM]; // force
-	double r; // radius
-	double m; // mass
-	bool anchored; // fixed or moving?
+	double f[DIM];	 // force
+	double r;		 // radius
+	double m;		 // mass
+	bool anchored;   // fixed or moving?
 };
 
 class ParticleSystem {
@@ -59,21 +59,21 @@ public:
 	ParticleSystem();
 	~ParticleSystem();
 
-	void AddParticle(Particle * p);
+	void AddParticle(Particle* p);
 	int GetNumParticles();
-	Particle * GetParticle(int i);
+	Particle* GetParticle(int i);
 
-	void AddForce(Force * f);
+	void AddForce(Force* f);
 	int GetNumForces();
-	Force * GetForce(int i);
+	Force* GetForce(int i);
 	double GetDeltaT();
 	void SetDeltaT(double DT);
 
 	// Methods for ODE solvers:
 	int ParticleDims();
-	void ParticleGetState(double * dst);
-	void ParticleSetState(double * src);
-	void ParticleGetDerivative(double * dst);
+	void ParticleGetState(double* dst);
+	void ParticleSetState(double* src);
+	void ParticleGetDerivative(double* dst);
 	void IncrementTime(double DeltaT);
 
 private:
@@ -86,6 +86,6 @@ private:
 	double DeltaT;
 };
 
-void RungeKuttaStep(ParticleSystem & ps, double DeltaT);
+void RungeKuttaStep(ParticleSystem& ps, double DeltaT);
 
 #endif // _PARTICLE_HPP_

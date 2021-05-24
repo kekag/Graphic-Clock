@@ -45,7 +45,7 @@ void SpringForce::Apply() {
 	double pDifSize = 0.0;
 
 	int d;
-	for(d=0; d<DIM; d++) {
+	for(d = 0; d < DIM; d++) {
 		pDif[d] = pos1[d] - pos2[d];
 		vDif[d] = dir1[d] - dir2[d];
 		pDifSize += pDif[d]*pDif[d];
@@ -54,7 +54,7 @@ void SpringForce::Apply() {
 	pDifSize = sqrt(pDifSize);
 
 	double multiplier = -(spring_constant*(pDifSize-rest_length) + damping_constant*dotProduct/pDifSize)/pDifSize;
-	for(d=0; d<DIM; d++) {
+	for(d = 0; d < DIM; d++) {
 		// f1[d] += multiplier * pDif[d];
 		// f2[d] += -(f1[d]);
 		double newForce = multiplier * pDif[d];

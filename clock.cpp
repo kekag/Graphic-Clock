@@ -28,28 +28,31 @@ GLdouble white[] = { 1.0, 1.0, 1.0, 1.0 };
 GLdouble black[] = { 0.0, 0.0, 0.0, 1.0 };
 GLdouble clear[] = { 0.9, 0.9, 0.9, 0.0 };
 
+// Screen size (pixels) 
 double screen_x = 500;
 double screen_y = 500;
-// Center coordinates
+// Center coordinates for shorter definitions
 double cx = screen_x / 2;
 double cy = screen_y / 2;
 
-// clock hand radii
+// Clock hand radii
 double secRadius = min(cx, cy) - (min(cx, cy) / 5);
 double minRadius = min(cx, cy) - (min(cx, cy) / 4);
 double hourRadius = min(cx, cy) - (min(cx, cy) / 2);
 double dash = min(cx, cy) - (min(cx, cy) / 10);
 
-// display 60 frames per 1000 milliseconds
+// Display 60 frames per 1000 milliseconds, for timer func
 static int redisplayInterval = 1000 / 60;
-vector<int> samples{ 64, 128, 256 };
+
+// Synchronization sample variables 
+vector<int> samples{ 64, 128/*, 256, 512, 1024, 2048*/ };
 int iter = 0;
 int frame = 0;
 chrono::milliseconds startMS;
 chrono::milliseconds endMS;
 bool doneSampling = false;
 
-// reshaping
+// Reshaping consistency
 double initialDT;
 
 ParticleSystem PS;
@@ -68,8 +71,8 @@ void displayCircle(double x1, double y1, double radius) {
 void displayLine(double x1, double y1, double x2, double y2, GLfloat lineWidth) {
 	glLineWidth(lineWidth);
 	glBegin(GL_LINES);
-	glVertex2d(x1,y1);
-	glVertex2d(x2,y2);
+	glVertex2d(x1, y1);
+	glVertex2d(x2, y2);
 	glEnd();
 	glLineWidth(1.0f);
 }
@@ -85,6 +88,34 @@ void displayText(double x, double y, const char *string) {
 		glutBitmapCharacter(font, string[i]);
 	}
     glDisable(GL_BLEND);
+}
+
+void displayDashes() {
+	// Draw reference dashes
+	glColor3dv(black);
+	int i = 1;
+	char str[3];
+	for (int deg = -84; deg < 276; deg += 6) {
+		double outX = cos(deg * M_PI / 180) * (dash + 4) + cx;
+		double outY = -sin(deg * M_PI / 180) * (dash + 4) + cy;
+		// Draw thick dashes each 5 minutes (and hour)
+		if (deg % 30 == 0) {
+			double inX = cos(deg * M_PI / 180) * (dash - 4) + cx;
+			double inY = -sin(deg * M_PI / 180) * (dash - 4) + cy;
+			displayLine(inX, inY, outX, outY, 2.25f);
+			// Draw clock numbers
+			double textX = cos(deg * M_PI / 180) * (dash - 20) + cx;
+			double textY = -sin(deg * M_PI / 180) * (dash - 20) + cy - 5;
+			i == 12 ? (textX -= 9) : (textX -= 5);
+			snprintf(str, 3, "%d", i);
+			displayText(textX, textY, str);
+			i++;
+		} else {
+			double inX = cos(deg * M_PI / 180) * dash + cx;
+			double inY = -sin(deg * M_PI / 180) * dash + cy;
+			displayLine(inX, inY, outX, outY, 1.0f);
+		}
+	}
 }
 
 void wallClock() {
@@ -105,7 +136,7 @@ void wallClock() {
 	int printHour;
 	hour == 0 ? printHour = 12 : printHour = hour;
 	snprintf(str, 9, "%d:%02d:%02d", printHour, minute, second);
-	cout << "Current time: " << str << "\n";
+	cout << "Current time: " << str << "\n\n";
 
 	// delta factor
 	double f = 50;
@@ -138,7 +169,7 @@ void wallClock() {
 	cout << "Inital values" << endl;
 	cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
 	cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
-	cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << endl;
+	cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << "\n\n";
 
 	// center, unfixed
 	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
@@ -187,7 +218,7 @@ void NoPSrender(void) {
 	int millisecond = current.count() % 1000;
 	int second = (current.count() / 1000) % 60;
 	int minute = (current.count() / 60000) % 60;
-	// This gets unix hour since epoch, need to use tm struct and localtime function to get timezone
+	// This gets unix hour since epoch, need to use tm struct and localtime function to get local time
 	// int hour = (current.count() / 3600000) % 12;
 
 	clock_t start = clock();
@@ -198,6 +229,7 @@ void NoPSrender(void) {
 #else 
 	localtime_r(&t, &bt);
 #endif
+	// Gets hour accurate to system's local timezone
 	int hour = bt.tm_hour % 12;
 
 	// Second degree, no offset needed
@@ -231,31 +263,8 @@ void NoPSrender(void) {
 	displayCircle(cx, cy, 10);
 
 	// Draw reference dashes
-	glColor3dv(black);
-	int i = 1;
-	char str[3];
-	for (int deg = -84; deg < 276; deg += 6) {
-		double outX = cos(deg * M_PI / 180) * (dash + 4) + cx;
-		double outY = -sin(deg * M_PI / 180) * (dash + 4) + cy;
-		// Draw thick dashes each 5 minutes (and hour)
-		if (deg % 30 == 0) {
-			double inX = cos(deg * M_PI / 180) * (dash - 4) + cx;
-			double inY = -sin(deg * M_PI / 180) * (dash - 4) + cy;
-			displayLine(inX, inY, outX, outY, 2.25f);
-			// Draw clock numbers
-			double textX = cos(deg * M_PI / 180) * (dash - 20) + cx;
-			double textY = -sin(deg * M_PI / 180) * (dash - 20) + cy - 5;
-			i == 12 ? (textX -= 9) : (textX -= 5);
-			snprintf(str, 3, "%d", i);
-			displayText(textX, textY, str);
-			i++;
-		}
-		else {
-			double inX = cos(deg * M_PI / 180) * dash + cx;
-			double inY = -sin(deg * M_PI / 180) * dash + cy;
-			displayLine(inX, inY, outX, outY, 1.0f);
-		}
-	}
+	displayDashes();
+
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -283,12 +292,13 @@ void render(void) {
 			Particle* p1 = sf->GetParticle1();
 			Particle* p2 = sf->GetParticle2();
 			glColor3dv(sf->getColor());
-			displayLine(p1->GetPositionX(), p1->GetPositionY(), p2->GetPositionX(), p2->GetPositionY(), sf->getSize());
+			displayLine(p1->GetPositionX(), p1->GetPositionY(), p2->GetPositionX(), p2->GetPositionY(), (GLfloat)sf->getSize());
 		}
 	}
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	// Draw Particles
 	for (int i = 0; i < N; i++) {
 		Particle* p = PS.GetParticle(i);
@@ -307,43 +317,19 @@ void render(void) {
 	glColor3dv(black);
 
 	// Draw reference dashes
-	int i = 1;
-	char str[3];
-	for (int deg = -84; deg < 276; deg += 6) {
-		double outX = cos(deg * M_PI / 180) * (dash + 4) + cx;
-		double outY = -sin(deg * M_PI / 180) * (dash + 4) + cy;
-		// Draw thick dashes each 5 minutes (and hour)
-		if (deg % 30 == 0) {
-			double inX = cos(deg * M_PI / 180) * (dash - 4) + cx;
-			double inY = -sin(deg * M_PI / 180) * (dash - 4) + cy;
-			displayLine(inX, inY, outX, outY, 2.25f);
-			// Draw clock numbers
-			double textX = cos(deg * M_PI / 180) * (dash - 20) + cx;
-			double textY = -sin(deg * M_PI / 180) * (dash - 20) + cy - 5;
-			i == 12 ? (textX -= 9) : (textX -= 5);
-			snprintf(str, 3, "%d", i);
-			displayText(textX, textY, str);
-			i++;
-		}
-		else {
-			double inX = cos(deg * M_PI / 180) * dash + cx;
-			double inY = -sin(deg * M_PI / 180) * dash + cy;
-			displayLine(inX, inY, outX, outY, 1.0f);
-		}
-	}
+	displayDashes();
 
 	glutSwapBuffers();
 
 	// Get DT arc length disparity
 	// double expectedDeg = (endMS.count() % 60000 / 166.6666667);
 	// Particle* S = PS.GetParticle(1);
-	// double actualDeg = atan((S->GetPositiony() + cy) / (S->GetPositionx() + cx));
+	// double actualDeg = atan((S->GetPositionY() + cy) / (S->GetPositionX() + cx));
 	// Get DT from arc length disparities (2 * pi * radius * (theta / 360))
 	// double smallestTheta;
 	// if (expectedDeg < actualDeg) {
 	// 	smallestTheta = actualDeg - expectedDeg;
-	// }
-	// else {
+	// } else {
 	// 	smallestTheta = expectedDeg - actualDeg;
 	// }
 	// if (smallestTheta > 180) {
@@ -363,8 +349,39 @@ void render(void) {
 		cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 		PS.SetDeltaT(DT);
 		initialDT = DT;
+		
+		// Get arc length disparity
+		double expectedDeg = (endMS.count() % 60000 / 166.6666667);
+		cout << "expected: " << expectedDeg << endl;
+
+		Particle* S = PS.GetParticle(1);
+		double actualDeg = atan((S->GetPositionY() - cy)/(S->GetPositionX() - cx)) * 180 / M_PI;
+		cout << "y: " << S->GetPositionY() << endl;
+		cout << "x: " << S->GetPositionX() << endl;
+		cout << "actual: " << actualDeg << endl;
+		// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
+		double smallestTheta;
+		if (expectedDeg < actualDeg) {
+			smallestTheta = actualDeg - expectedDeg;
+		} else {
+			smallestTheta = expectedDeg - actualDeg;
+		}
+		if (smallestTheta > 180) {
+			smallestTheta = 360 - smallestTheta;
+		}
+		double arcLen = 2 * M_PI * secRadius * (smallestTheta / 360);
+		// negative -> DT too slow, positive -> DT too fast
+		if (expectedDeg >= actualDeg) {
+			arcLen = -arcLen;
+		}
+
+		DT = PS.GetDeltaT() + (arcLen / 50000.0);
+		cout << "Arc disparity: " << arcLen << ", DT adjusted to arc: " << DT << endl;
+		
+		
+		// initialDT = DT;
 		frame = 0;
-		if (iter < samples.size() - 1) {
+		if (iter < (samples.size() - 1)) {
 			iter++;
 		} else {
 			doneSampling = true;
@@ -426,7 +443,7 @@ void reshape(int width, int height) {
 	hour->setRestLength(hourRadius);
 
 	// Adjust DT based on relative hand sizes
-	double ratio = min(cx, cy) / 250;
+	double ratio = (min(cx, cy) / 250) * 1.1;
 	double scale = initialDT*ratio;
 	double disparity = scale - PS.GetDeltaT();
 	PS.SetDeltaT(PS.GetDeltaT() + disparity);
@@ -452,9 +469,9 @@ int main(int argc, char **argv) {
 	glutCreateWindow("Clock");
 	
 	// Uses particle system with delta X and Y initializers and Runge Kutta step method to approximate time
-	// glutDisplayFunc(render);
+	glutDisplayFunc(render);
 	// Gets actual system time each frame and calculates X and Y positions based on that
-	glutDisplayFunc(NoPSrender);
+	// glutDisplayFunc(NoPSrender);
 
 	glutKeyboardFunc(keyboard);
 	glutReshapeFunc(reshape);

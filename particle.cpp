@@ -78,10 +78,10 @@ void ParticleSystem::IncrementTime(double DeltaT) {
 	time += DeltaT;
 }
 
-void ParticleSystem::ParticleGetState(double * dst) {
+void ParticleSystem::ParticleGetState(double* dst) {
 	int n = GetNumParticles();
 	for(int i=0; i<n; i++) {
-		Particle * p = GetParticle(i);
+		Particle* p = GetParticle(i);
 		double pos[DIM];
 		double dir[DIM];
 		p->GetPosition(pos);
@@ -97,10 +97,10 @@ void ParticleSystem::ParticleGetState(double * dst) {
 	}
 }
 
-void ParticleSystem::ParticleSetState(double * src) {
+void ParticleSystem::ParticleSetState(double* src) {
 	int n = GetNumParticles();
 	for(int i=0; i<n; i++) {
-		Particle * p = GetParticle(i);
+		Particle* p = GetParticle(i);
 		double pos[DIM];
 		double dir[DIM];
 		p->GetPosition(pos);
@@ -109,12 +109,12 @@ void ParticleSystem::ParticleSetState(double * src) {
 		int d;
 		for(d=0; d<DIM; d++) {
 			if(p->GetAnchored()==false)
-				pos[d] = *src;
+				pos[d] =*src;
 			src++;
 		}
 		for(d=0; d<DIM; d++) {
 			if(p->GetAnchored()==false)
-				dir[d] = *src;
+				dir[d] =*src;
 			src++;
 		}
 
@@ -123,12 +123,12 @@ void ParticleSystem::ParticleSetState(double * src) {
 	}
 }
 
-void ParticleSystem::ParticleGetDerivative(double * dst) {
+void ParticleSystem::ParticleGetDerivative(double* dst) {
 	ClearForces();
 	ComputeForces();
 	int n = GetNumParticles();
 	for(int i=0; i<n; i++) {
-		Particle * p = GetParticle(i);
+		Particle* p = GetParticle(i);
 		double pos[DIM];
 		double dir[DIM];
 		double f[DIM];
@@ -150,7 +150,7 @@ void ParticleSystem::ParticleGetDerivative(double * dst) {
 void ParticleSystem::ClearForces() {
 	int n = GetNumParticles();
 	for(int i=0; i<n; i++) {
-		Particle * p = GetParticle(i);
+		Particle* p = GetParticle(i);
 		double f[DIM];
 		int d;
 		for(d=0; d<DIM; d++) {
@@ -171,15 +171,15 @@ int ParticleSystem::GetNumParticles() {
 	return (int)pArray.size();
 }
 
-Particle * ParticleSystem::GetParticle(int i) {
+Particle* ParticleSystem::GetParticle(int i) {
 	return pArray[i];
 }
 
-void ParticleSystem::AddParticle(Particle * p) {
+void ParticleSystem::AddParticle(Particle* p) {
 	pArray.push_back(p);
 }
 	
-void ParticleSystem::AddForce(Force * f) {
+void ParticleSystem::AddForce(Force* f) {
 	fArray.push_back(f);
 }
 
@@ -187,7 +187,7 @@ int ParticleSystem::GetNumForces() {
 	return (int)fArray.size();
 }
 
-Force * ParticleSystem::GetForce(int i) {
+Force* ParticleSystem::GetForce(int i) {
 	return fArray[i];
 }
 
@@ -201,17 +201,17 @@ void ParticleSystem::SetDeltaT(double DT) {
 
 // ODE Solver //
 
-void AddVector(double * s1, double * s2, double * destination, int count) {
+void AddVector(double* s1, double* s2, double* destination, int count) {
 	for(int i = 0; i< count; i++) {
 		*destination++ = *s1++ + *s2++;
 	}
 }
-void CopyVector(double * destination, double * source, int count) {
+void CopyVector(double* destination, double* source, int count) {
 	for(int i = 0; i < count; i++) {
 		*destination++ = *source++;
 	}
 }
-void ScaleVector(double * v, double scale, int count) {
+void ScaleVector(double* v, double scale, int count) {
 	for(int i = 0; i < count; i++) {
 		v[i] *= scale;
 	}
@@ -221,43 +221,43 @@ void RungeKuttaStep(ParticleSystem & ps, double DeltaT) {
 	int size = ps.ParticleDims();
 
 	// Get original oldPositions
-	double * oldPositions = new double[size];
+	double* oldPositions = new double[size];
 	ps.ParticleGetState(oldPositions);
 
 	// Calculate the delta of an Euler step
-	double * k1 = new double[size];
+	double* k1 = new double[size];
 	ps.ParticleGetDerivative(k1);
 	ScaleVector(k1, DeltaT, size);
 
 	// Update the particle system by moving the k1/2
-	double * p2 = new double[size];
+	double* p2 = new double[size];
 	CopyVector(p2, k1, size); // p2 gets k1
 	ScaleVector(p2, 0.5, size);
 	AddVector(oldPositions, p2, p2, size);
 	ps.ParticleSetState(p2);
 
-	double * k2 = new double[size];
+	double* k2 = new double[size];
 	ps.ParticleGetDerivative(k2);
 	ScaleVector(k2, DeltaT, size);
-	double * p3 = new double[size];
+	double* p3 = new double[size];
 	CopyVector(p3, k2, size); // p2 gets k1
 	ScaleVector(p3, 0.5, size);
 	AddVector(oldPositions, p3, p3, size);
 	ps.ParticleSetState(p3);
 
-	double * k3 = new double[size];
+	double* k3 = new double[size];
 	ps.ParticleGetDerivative(k3);
 	ScaleVector(k3, DeltaT, size);
-	double * p4 = new double[size];
+	double* p4 = new double[size];
 	CopyVector(p4, k3, size); // p2 gets k1
 	AddVector(oldPositions, p4, p4, size);
 	ps.ParticleSetState(p4);
 
-	double * k4 = new double[size];
+	double* k4 = new double[size];
 	ps.ParticleGetDerivative(k4);
 	ScaleVector(k4, DeltaT, size);
 
-	double * finalPositions = new double[size];
+	double* finalPositions = new double[size];
 	ScaleVector(k1, (1./6.), size);
 	ScaleVector(k2, (1./3.), size);
 	ScaleVector(k3, (1./3.), size);
