@@ -352,13 +352,29 @@ void render(void) {
 		
 		// Get arc length disparity
 		double expectedDeg = (endMS.count() % 60000 / 166.6666667);
-		cout << "expected: " << expectedDeg << endl;
+		/*cout << "ms of min: " << endMS.count() % 60000 << endl;
+		cout << "expected: " << expectedDeg << endl;*/
 
+		// Positions relative to the center particle
 		Particle* S = PS.GetParticle(1);
-		double actualDeg = atan((S->GetPositionY() - cy)/(S->GetPositionX() - cx)) * 180 / M_PI;
-		cout << "y: " << S->GetPositionY() << endl;
-		cout << "x: " << S->GetPositionX() << endl;
-		cout << "actual: " << actualDeg << endl;
+		double Y = S->GetPositionY() - cy;
+		double X = S->GetPositionX() - cx;
+
+		// Find theta using arc tangent
+		double actualDeg;
+		if (X >= 0 && Y >= 0) { // QUADRANT I
+			actualDeg = atan(Y / X) * 180 / M_PI;
+		} else if (X <= 0 && Y >= 0) { // QUADRANT II
+			actualDeg = abs(atan(Y / -X) * 180 / M_PI - 90) + 90;
+		} else if (X <= 0 && Y <= 0) { // QUADRANT III
+			actualDeg = abs(atan(-Y / -X) * 180 / M_PI) + 180;
+		} else { // QUADRANT IV
+			actualDeg = abs(atan(-Y / X) * 180 / M_PI - 90) + 270;
+		}
+		
+		/*cout << "y: " << Y << endl;
+		cout << "x: " << X << endl;
+		cout << "actual: " << actualDeg << endl;*/
 		// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
 		double smallestTheta;
 		if (expectedDeg < actualDeg) {
@@ -376,9 +392,9 @@ void render(void) {
 		}
 
 		DT = PS.GetDeltaT() + (arcLen / 50000.0);
-		cout << "Arc disparity: " << arcLen << ", DT adjusted to arc: " << DT << endl;
+		/*cout << "Arc disparity: " << arcLen << ", DT adjusted to arc: " << DT << endl;*/
 		
-		
+		// PS.SetDeltaT(DT);
 		// initialDT = DT;
 		frame = 0;
 		if (iter < (samples.size() - 1)) {
