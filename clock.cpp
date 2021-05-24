@@ -45,7 +45,7 @@ double dash = min(cx, cy) - (min(cx, cy) / 10);
 static int redisplayInterval = 1000 / 60;
 
 // Synchronization sample variables 
-vector<int> samples{ 64, 128/*, 256, 512, 1024, 2048*/ };
+vector<int> samples{ 64, 128, 256, 512 };
 int iter = 0;
 int frame = 0;
 chrono::milliseconds startMS;
@@ -56,6 +56,10 @@ bool doneSampling = false;
 double initialDT;
 
 ParticleSystem PS;
+
+struct Time {
+	int ms, s, m, h;
+};
 
 void displayCircle(double x1, double y1, double radius) {
 	glBegin(GL_POLYGON);
@@ -118,99 +122,7 @@ void displayDashes() {
 	}
 }
 
-void wallClock() {
-	clock_t start = clock();
-
-	time_t t = time(0);
-	tm bt{};
-#if WIN32
-	localtime_s(&bt, &t);
-#else 
-	localtime_r(&t, &bt);
-#endif
-	int second = bt.tm_sec;
-	int minute = bt.tm_min;
-	int hour = bt.tm_hour % 12;
-
-	char str[9];
-	int printHour;
-	hour == 0 ? printHour = 12 : printHour = hour;
-	snprintf(str, 9, "%d:%02d:%02d", printHour, minute, second);
-	cout << "Current time: " << str << "\n\n";
-
-	// delta factor
-	double f = 50;
-
-	// Second degree, no offset needed
-	double secDeg = second * 6;
-	// Adjust so 0-degree is on 12 instead of 3
-	double sd = fmod(secDeg - 90, 360);
-	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
-	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
-	double secondDX = -sin(sd * M_PI / 180) * f;
-	double secondDY = -cos(sd * M_PI / 180) * f;
-
-	// Minute degree with 0-6 deg. second offset
-	double minDeg = minute * 6 + secDeg / 60;
-	double md = fmod(minDeg - 90, 360);
-	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
-	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
-	double minuteDX = -sin(md * M_PI / 180) * f / 60;
-	double minuteDY = -cos(md * M_PI / 180) * f / 60;
-
-	// Hour degree with 0-30 deg. minute offset
-	double hourDeg = hour * 30 + minDeg / 12;
-	double hd = fmod(hourDeg - 90, 360);
-	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
-	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
-	double hourDX = -sin(hd * M_PI / 180) * f / /*3600*/ 1800;
-	double hourDY = -cos(hd * M_PI / 180) * f / /*3600*/ 1800;
-
-	cout << "Inital values" << endl;
-	cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
-	cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
-	cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << "\n\n";
-
-	// center, unfixed
-	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
-	PS.AddParticle(p1);
-
-	// second, minute, hour
-	Particle* p2 = new Particle(secondX, secondY, secondDX, secondDY, 10, 0);
-	PS.AddParticle(p2);
-
-	Particle* p3 = new Particle(minuteX, minuteY, minuteDX, minuteDY, 10, 0);
-	PS.AddParticle(p3);
-
-	Particle* p4 = new Particle(hourX, hourY, hourDX, hourDY, 10, 0);
-	PS.AddParticle(p4);
-
-	// second, minute, hour
-	SpringForce* s1 = new SpringForce(p1, p2, 10000, 2.0, 10000, secRadius);
-	s1->setColor(red);
-	PS.AddForce(s1);
-
-	SpringForce* s2 = new SpringForce(p1, p3, 10000, 3.5, 1000, minRadius);
-	s2->setColor(black);
-	PS.AddForce(s2);
-
-	SpringForce* s3 = new SpringForce(p1, p4, 10000, 4.5, 1000, hourRadius);
-	s3->setColor(black);
-	PS.AddForce(s3);
-
-	clock_t end = clock();
-	double approxDT = (double)(end-start) / 5800.0;
-	if (approxDT == 0) {
-		approxDT = 0.0001;
-	}
-	cout << "Temp approximate DT: " << approxDT << endl;
-	PS.SetDeltaT(approxDT);
-}
-
-void NoPSrender(void) {
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3dv(white);
-
+Time getTime(bool print) {
 	chrono::milliseconds current = chrono::duration_cast<chrono::milliseconds>(
 		chrono::system_clock::now().time_since_epoch()
 	);
@@ -232,22 +144,109 @@ void NoPSrender(void) {
 	// Gets hour accurate to system's local timezone
 	int hour = bt.tm_hour % 12;
 
-	// Second degree, no offset needed
-	double secDeg = second * 6 + millisecond / 166.6667;
+	if (print) {
+		char str[16];
+		int printHour;
+		char meridiem;
+		hour == 0 ? printHour = 12 : printHour = hour;
+		bt.tm_hour >= 12 ? meridiem = 'P' : meridiem = 'A';
+		snprintf(str, 16, "%d:%02d:%02d.%03d %cM", printHour, minute, second, millisecond, meridiem);
+		cout << "Current time: " << str << "\n\n";
+	}
+
+	return { millisecond, second, minute, hour };
+}
+
+void wallClock() {
+ 	clock_t start = clock();
+
+	Time t = getTime(true);
+
+	// delta factor
+	double f = 50;
+
+	// Second degree with 0-6 deg ms offset
+	double secDeg = t.s * 6 + t.ms / 166.6667;
 	// Adjust so 0-degree is on 12 instead of 3
-	double sd = fmod(secDeg - 90, 360);
+	double sd = fmod(secDeg + 270, 360);
+	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
+	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
+	double secondDX = -sin(sd * M_PI / 180) * f;
+	double secondDY = -cos(sd * M_PI / 180) * f;
+
+	// Minute degree with 0-6 deg second offset
+	double minDeg = t.m * 6 + secDeg / 60;
+	double md = fmod(minDeg + 270, 360);
+	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
+	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
+	double minuteDX = -sin(md * M_PI / 180) * f / 60;
+	double minuteDY = -cos(md * M_PI / 180) * f / 60;
+
+	// Hour degree with 0-30 deg minute offset
+	double hourDeg = t.h * 30 + minDeg / 12;
+	double hd = fmod(hourDeg + 270, 360);
+	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
+	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
+	double hourDX = -sin(hd * M_PI / 180) * f / /*3600*/ 1800;
+	double hourDY = -cos(hd * M_PI / 180) * f / /*3600*/ 1800;
+
+	cout << "Inital values" << endl;
+	cout << "secX: " << secondX << ", secY: " << secondY << ", secDX: " << secondDX << ", secDY: " << secondDY << endl;
+	cout << "minX: " << minuteX << ", minY: " << minuteY << ", minDX: " << minuteDX << ", minDY: " << minuteDY << endl;
+	cout << "hourX: " << hourX << ", hourY: " << hourY << ", hourDX: " << hourDX << ", hourDY: " << hourDY << "\n\n";
+
+	// center, unfixed
+	Particle* p1 = new Particle(cx, cy, 0, 0, 10, 1);
+	PS.AddParticle(p1);
+
+	// second, minute, hour
+	Particle* p2 = new Particle(secondX, secondY, secondDX, secondDY, 10, 0);
+	PS.AddParticle(p2);
+	Particle* p3 = new Particle(minuteX, minuteY, minuteDX, minuteDY, 10, 0);
+	PS.AddParticle(p3);
+	Particle* p4 = new Particle(hourX, hourY, hourDX, hourDY, 10, 0);
+	PS.AddParticle(p4);
+
+	// second, minute, hour
+	SpringForce* s1 = new SpringForce(p1, p2, 10000, 2.0, 10000, secRadius);
+	s1->setColor(red);
+	PS.AddForce(s1);
+	SpringForce* s2 = new SpringForce(p1, p3, 10000, 3.5, 1000, minRadius);
+	s2->setColor(black);
+	PS.AddForce(s2);
+	SpringForce* s3 = new SpringForce(p1, p4, 10000, 4.5, 1000, hourRadius);
+	s3->setColor(black);
+	PS.AddForce(s3);
+
+	clock_t end = clock();
+	double approxDT = (double)(end - start) / 5800.0;
+	if (approxDT == 0) {
+		approxDT = 0.0001;
+	}
+	cout << "Temp approximate DT: " << approxDT << endl;
+	PS.SetDeltaT(approxDT);
+}
+
+void NoPSrender(void) {
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	Time t = getTime(false);
+
+	// Second degree, no offset needed
+	double secDeg = t.s * 6 + t.ms / 166.6667;
+	double sd = fmod(secDeg + 270, 360);
 	double secondX = cos(sd * M_PI / 180) * secRadius + cx;
 	double secondY = -sin(sd * M_PI / 180) * secRadius + cy;
 
 	// Minute degree with 0-6 deg. second offset
-	double minDeg = minute * 6 + secDeg / 60;
-	double md = fmod(minDeg - 90, 360);
+	double minDeg = t.m * 6 + secDeg / 60;
+	double md = fmod(minDeg + 270, 360);
 	double minuteX = cos(md * M_PI / 180) * minRadius + cx;
 	double minuteY = -sin(md * M_PI / 180) * minRadius + cy;
 
 	// Hour degree with 0-30 deg. minute offset
-	double hourDeg = hour * 30 + minDeg / 12;
-	double hd = fmod(hourDeg - 90, 360);
+	double hourDeg = t.h * 30 + minDeg / 12;
+	double hd = fmod(hourDeg + 270, 360);
 	double hourX = cos(hd * M_PI / 180) * hourRadius + cx;
 	double hourY = -sin(hd * M_PI / 180) * hourRadius + cy;
 
@@ -321,26 +320,6 @@ void render(void) {
 
 	glutSwapBuffers();
 
-	// Get DT arc length disparity
-	// double expectedDeg = (endMS.count() % 60000 / 166.6666667);
-	// Particle* S = PS.GetParticle(1);
-	// double actualDeg = atan((S->GetPositionY() + cy) / (S->GetPositionX() + cx));
-	// Get DT from arc length disparities (2 * pi * radius * (theta / 360))
-	// double smallestTheta;
-	// if (expectedDeg < actualDeg) {
-	// 	smallestTheta = actualDeg - expectedDeg;
-	// } else {
-	// 	smallestTheta = expectedDeg - actualDeg;
-	// }
-	// if (smallestTheta > 180) {
-	// 	smallestTheta = 360 - smallestTheta;
-	// }
-	// double arcLen = 2 * M_PI * secRadius * (smallestTheta / 360);
-	// negative -> DT too slow, positive -> DT too fast
-	// if (expectedDeg >= actualDeg) {
-	// 	arcLen = -arcLen;
-	// }
-
 	if (frame == samples[iter] && !doneSampling) {
 		endMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
@@ -352,8 +331,7 @@ void render(void) {
 		
 		// Get arc length disparity
 		double expectedDeg = (endMS.count() % 60000 / 166.6666667);
-		/*cout << "ms of min: " << endMS.count() % 60000 << endl;
-		cout << "expected: " << expectedDeg << endl;*/
+		cout << "expected: " << expectedDeg << endl;
 
 		// Positions relative to the center particle
 		Particle* S = PS.GetParticle(1);
@@ -362,40 +340,44 @@ void render(void) {
 
 		// Find theta using arc tangent
 		double actualDeg;
-		if (X >= 0 && Y >= 0) { // QUADRANT I
+		if (X >= 0 && Y >= 0) {        // QUADRANT I
 			actualDeg = atan(Y / X) * 180 / M_PI;
 		} else if (X <= 0 && Y >= 0) { // QUADRANT II
 			actualDeg = abs(atan(Y / -X) * 180 / M_PI - 90) + 90;
 		} else if (X <= 0 && Y <= 0) { // QUADRANT III
 			actualDeg = abs(atan(-Y / -X) * 180 / M_PI) + 180;
-		} else { // QUADRANT IV
+		} else { 					   // QUADRANT IV
 			actualDeg = abs(atan(-Y / X) * 180 / M_PI - 90) + 270;
 		}
+		actualDeg = -(fmod(actualDeg + 270, 360) - 360);
+		cout << "actual: " << actualDeg << endl;
 		
-		/*cout << "y: " << Y << endl;
-		cout << "x: " << X << endl;
-		cout << "actual: " << actualDeg << endl;*/
-		// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
-		double smallestTheta;
-		if (expectedDeg < actualDeg) {
-			smallestTheta = actualDeg - expectedDeg;
-		} else {
-			smallestTheta = expectedDeg - actualDeg;
+		double disparity;
+		bool flipped = false;
+		expectedDeg < actualDeg ? disparity = actualDeg - expectedDeg : disparity = expectedDeg - actualDeg;
+		if (disparity > 180) {
+			disparity = 360 - disparity;
+			flipped = true;
 		}
-		if (smallestTheta > 180) {
-			smallestTheta = 360 - smallestTheta;
-		}
-		double arcLen = 2 * M_PI * secRadius * (smallestTheta / 360);
-		// negative -> DT too slow, positive -> DT too fast
-		if (expectedDeg >= actualDeg) {
-			arcLen = -arcLen;
-		}
+		cout << "disparity: " << disparity << endl;
 
-		DT = PS.GetDeltaT() + (arcLen / 50000.0);
-		/*cout << "Arc disparity: " << arcLen << ", DT adjusted to arc: " << DT << endl;*/
+		// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
+		double arc = 2 * M_PI * secRadius * (disparity / 360);
+		// Negate if DT is behind
+		if (expectedDeg < actualDeg && !flipped || expectedDeg >= actualDeg && flipped) {
+			arc = -arc;
+		} 
+		cout << "arc length: " << arc << endl;
+
+		double currentDT = PS.GetDeltaT();
+		cout << "current DT: " << currentDT << endl;
+		double adjustment = arc * (currentDT / 1000.0);
+		cout << "adjustment: " << adjustment << endl;
+		DT = currentDT + adjustment;
+		cout << "DT: " << DT << endl;
 		
-		// PS.SetDeltaT(DT);
-		// initialDT = DT;
+		PS.SetDeltaT(DT);
+		initialDT = DT;
 		frame = 0;
 		if (iter < (samples.size() - 1)) {
 			iter++;
@@ -459,10 +441,13 @@ void reshape(int width, int height) {
 	hour->setRestLength(hourRadius);
 
 	// Adjust DT based on relative hand sizes
-	double ratio = (min(cx, cy) / 250) * 1.1;
+	double ratio = min(cx, cy) / 250;
 	double scale = initialDT*ratio;
 	double disparity = scale - PS.GetDeltaT();
-	PS.SetDeltaT(PS.GetDeltaT() + disparity);
+	double reshape = PS.GetDeltaT() + disparity;
+	if (reshape != 0) {
+		PS.SetDeltaT(reshape);
+	}
 
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
