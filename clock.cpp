@@ -45,7 +45,7 @@ double dash = min(cx, cy) - (min(cx, cy) / 10);
 static int redisplayInterval = 1000 / 60;
 
 // Synchronization sample variables 
-vector<int> samples{ 64, 128, 256, 512 };
+vector<int> samples{ 128, 256, 512, 2048, 2048, 4096, 4096, 8192, 8192, 16384, 16384 };
 int iter = 0;
 int frame = 0;
 chrono::milliseconds startMS;
@@ -223,7 +223,7 @@ void wallClock() {
 	if (approxDT == 0) {
 		approxDT = 0.0001;
 	}
-	cout << "Temp approximate DT: " << approxDT << endl;
+	cout << "Temporary approximate DT: " << approxDT << endl;
 	PS.SetDeltaT(approxDT);
 }
 
@@ -324,62 +324,59 @@ void render(void) {
 		endMS = chrono::duration_cast<chrono::milliseconds>(
 			chrono::system_clock::now().time_since_epoch()
 		);
-		if (iter < 2) {
+
+		if (iter < 3) {
 			double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
 			cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 			PS.SetDeltaT(DT);
 			initialDT = DT;
+		} else {
+			// Get arc length disparity
+			double expectedDeg = (endMS.count() % 60000 / 166.6666667);
+			// cout << "expected: " << expectedDeg << endl;
+
+			// Positions relative to the center particle
+			Particle* S = PS.GetParticle(1);
+			double Y = S->GetPositionY() - cy;
+			double X = S->GetPositionX() - cx;
+
+			// Find theta using arc tangent
+			double actualDeg;
+			if (X >= 0 && Y >= 0) {        // QUADRANT I
+				actualDeg = atan(Y / X) * 180 / M_PI;
+			} else if (X <= 0 && Y >= 0) { // QUADRANT II
+				actualDeg = abs(atan(Y / -X) * 180 / M_PI - 90) + 90;
+			} else if (X <= 0 && Y <= 0) { // QUADRANT III
+				actualDeg = abs(atan(-Y / -X) * 180 / M_PI) + 180;
+			} else { 					   // QUADRANT IV
+				actualDeg = abs(atan(-Y / X) * 180 / M_PI - 90) + 270;
+			}
+			actualDeg = -(fmod(actualDeg + 270, 360) - 360);
+
+			double disparity;
+			bool flipped = false;
+			expectedDeg < actualDeg ? disparity = actualDeg - expectedDeg : disparity = expectedDeg - actualDeg;
+			if (disparity > 180) {
+				disparity = 360 - disparity;
+				flipped = true;
+			}
+
+			// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
+			double arc = 2 * M_PI * secRadius * (disparity / 360);
+			// Negate if DT is behind
+			if (expectedDeg < actualDeg && !flipped || expectedDeg >= actualDeg && flipped) {
+				arc = -arc;
+			}
+
+			double currentDT = PS.GetDeltaT();
+			double adjustment = arc * (currentDT / 1000.0);
+			double DT = currentDT + adjustment;
+			cout << "DT after adjusting to " << arc << " arc disparity: " << DT << endl;
+
+			PS.SetDeltaT(DT);
+			initialDT = DT;
 		}
-		
-		// Get arc length disparity
-		double expectedDeg = (endMS.count() % 60000 / 166.6666667);
-		cout << "expected: " << expectedDeg << endl;
 
-		// Positions relative to the center particle
-		Particle* S = PS.GetParticle(1);
-		double Y = S->GetPositionY() - cy;
-		double X = S->GetPositionX() - cx;
-
-		// Find theta using arc tangent
-		double actualDeg;
-		if (X >= 0 && Y >= 0) {        // QUADRANT I
-			actualDeg = atan(Y / X) * 180 / M_PI;
-		} else if (X <= 0 && Y >= 0) { // QUADRANT II
-			actualDeg = abs(atan(Y / -X) * 180 / M_PI - 90) + 90;
-		} else if (X <= 0 && Y <= 0) { // QUADRANT III
-			actualDeg = abs(atan(-Y / -X) * 180 / M_PI) + 180;
-		} else { 					   // QUADRANT IV
-			actualDeg = abs(atan(-Y / X) * 180 / M_PI - 90) + 270;
-		}
-		actualDeg = -(fmod(actualDeg + 270, 360) - 360);
-		cout << "actual: " << actualDeg << endl;
-		
-		double disparity;
-		bool flipped = false;
-		expectedDeg < actualDeg ? disparity = actualDeg - expectedDeg : disparity = expectedDeg - actualDeg;
-		if (disparity > 180) {
-			disparity = 360 - disparity;
-			flipped = true;
-		}
-		cout << "disparity: " << disparity << endl;
-
-		// Calculate absolute arc length between expected and actual second degree (2 * pi * radius * (theta / 360))
-		double arc = 2 * M_PI * secRadius * (disparity / 360);
-		// Negate if DT is behind
-		if (expectedDeg < actualDeg && !flipped || expectedDeg >= actualDeg && flipped) {
-			arc = -arc;
-		} 
-		cout << "arc length: " << arc << endl;
-
-		double currentDT = PS.GetDeltaT();
-		cout << "current DT: " << currentDT << endl;
-		double adjustment = arc * (currentDT / 1000.0);
-		cout << "adjustment: " << adjustment << endl;
-		double DT = currentDT + adjustment;
-		cout << "DT: " << DT << endl;
-		
-		PS.SetDeltaT(DT);
-		initialDT = DT;
 		frame = 0;
 		if (iter < (samples.size() - 1)) {
 			iter++;
