@@ -44,8 +44,8 @@ double dash = min(cx, cy) - (min(cx, cy) / 10);
 // Display 60 frames per 1000 milliseconds, for timer func
 static int redisplayInterval = 1000 / 60;
 
-// Synchronization sample variables 
-vector<int> samples{ 128, 256, 512, 2048, 2048, 4096, 4096, 8192, 8192, 16384, 16384 };
+// Synchronization sample variables
+vector<int> samples{ 4, 128, 256, 384, 512, 768, 2048, 4096, 8192, 8192, 16384, 16384 };
 int iter = 0;
 int frame = 0;
 chrono::milliseconds startMS;
@@ -325,7 +325,7 @@ void render(void) {
 			chrono::system_clock::now().time_since_epoch()
 		);
 
-		if (iter < 3) {
+		if (iter < 4) {
 			double DT = (endMS.count() - startMS.count()) / (2500.0 * frame);
 			cout << "DT after " << samples[iter] << " frame samples: " << DT << endl;
 			PS.SetDeltaT(DT);
@@ -369,7 +369,7 @@ void render(void) {
 			}
 
 			double currentDT = PS.GetDeltaT();
-			double adjustment = arc * (currentDT / 1000.0);
+			double adjustment = arc * (currentDT / (double)samples[iter]);
 			double DT = currentDT + adjustment;
 			cout << "DT after adjusting to " << arc << " arc disparity: " << DT << endl;
 
